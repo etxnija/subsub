@@ -39,4 +39,4 @@ class Player {
 
   @override
   String toString() => 'Player(id: $id, name: $name, number: $number)';
-} 
+}

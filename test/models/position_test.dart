@@ -26,11 +26,15 @@ void main() {
 
       test('should have correct position types', () {
         final formation = Position.defaultFormation;
-        
-        expect(formation.where((p) => p.type == PositionType.goalkeeper).length, equals(1));
-        expect(formation.where((p) => p.type == PositionType.defender).length, equals(2));
-        expect(formation.where((p) => p.type == PositionType.midfielder).length, equals(3));
-        expect(formation.where((p) => p.type == PositionType.forward).length, equals(1));
+
+        expect(formation.where((p) => p.type == PositionType.goalkeeper).length,
+            equals(1));
+        expect(formation.where((p) => p.type == PositionType.defender).length,
+            equals(2));
+        expect(formation.where((p) => p.type == PositionType.midfielder).length,
+            equals(3));
+        expect(formation.where((p) => p.type == PositionType.forward).length,
+            equals(1));
       });
 
       test('should have valid coordinates', () {
@@ -50,10 +54,12 @@ void main() {
       test('goalkeeper should be positioned at the back', () {
         final goalkeeper = Position.defaultFormation
             .firstWhere((p) => p.type == PositionType.goalkeeper);
-        
-        expect(goalkeeper.y, lessThan(0.2)); // Goalkeeper should be near the back
-        expect(goalkeeper.x, closeTo(0.5, 0.1)); // Goalkeeper should be centered
+
+        expect(
+            goalkeeper.y, lessThan(0.2)); // Goalkeeper should be near the back
+        expect(
+            goalkeeper.x, closeTo(0.5, 0.1)); // Goalkeeper should be centered
       });
     });
   });
-} 
+}
