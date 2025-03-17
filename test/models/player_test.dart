@@ -5,7 +5,7 @@ void main() {
   group('Player', () {
     test('should create a Player instance', () {
       const player = Player(name: 'John Doe', number: 10);
-      
+
       expect(player.name, equals('John Doe'));
       expect(player.number, equals(10));
       expect(player.id, isNull);

@@ -12,7 +12,7 @@ void main() {
         createdAt: createdAt,
         roster: const [],
       );
-      
+
       expect(game.name, equals('Game vs Team A'));
       expect(game.numberOfPeriods, equals(4));
       expect(game.createdAt, equals(createdAt));
@@ -36,7 +36,8 @@ void main() {
       expect(game.id, equals(1));
       expect(game.name, equals('Game vs Team A'));
       expect(game.numberOfPeriods, equals(4));
-      expect(game.createdAt.toIso8601String(), equals(createdAt.toIso8601String()));
+      expect(game.createdAt.toIso8601String(),
+          equals(createdAt.toIso8601String()));
       expect(game.status, equals(GameStatus.setup));
       expect(game.roster, isEmpty);
     });
@@ -110,7 +111,7 @@ void main() {
       final createdAt = DateTime.now();
       const player1 = Player(id: 1, name: 'Player 1', number: 1);
       const player2 = Player(id: 2, name: 'Player 2', number: 2);
-      
+
       final game = Game(
         name: 'Test Game',
         numberOfPeriods: 4,
@@ -124,4 +125,4 @@ void main() {
       expect(subs.first, equals(player2));
     });
   });
-} 
+}

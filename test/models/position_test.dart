@@ -11,7 +11,7 @@ void main() {
         y: 0.1,
         displayName: 'GK',
       );
-      
+
       expect(position.id, equals('GK'));
       expect(position.type, equals(PositionType.goalkeeper));
       expect(position.x, equals(0.5));
@@ -61,8 +61,10 @@ void main() {
           displayName: 'GK',
         );
 
-        expect(goalkeeper.y, lessThan(0.2)); // Goalkeeper should be near the back
-        expect(goalkeeper.x, closeTo(0.5, 0.1)); // Goalkeeper should be centered
+        expect(
+            goalkeeper.y, lessThan(0.2)); // Goalkeeper should be near the back
+        expect(
+            goalkeeper.x, closeTo(0.5, 0.1)); // Goalkeeper should be centered
       });
     });
   });
