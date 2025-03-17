@@ -1,70 +1,127 @@
-enum PositionType { goalkeeper, defender, midfielder, forward }
+import 'package:flutter/material.dart';
 
+@immutable
 class Position {
-  final String id; // e.g., "GK", "D1", "D2", "M1", "M2", "M3", "F"
-  final PositionType type;
-  final double x; // Normalized position (0-1) for field layout
-  final double y; // Normalized position (0-1) for field layout
-  final String displayName;
+  final String id;
+  final String name;
+  final String abbreviation;
+  final String category; // e.g., "Forward", "Midfield", "Defense", "Goalkeeper"
+  final Offset defaultLocation; // Normalized position (0-1) for field layout
 
   const Position({
     required this.id,
-    required this.type,
-    required this.x,
-    required this.y,
-    required this.displayName,
+    required this.name,
+    required this.abbreviation,
+    required this.category,
+    required this.defaultLocation,
   });
 
-  // Predefined positions for 2-3-1 formation
-  static const List<Position> defaultFormation = [
+  // 7v7 positions with 2-3-1 formation
+  static const List<Position> standardPositions = [
+    // Goalkeeper
     Position(
-      id: 'GK',
-      type: PositionType.goalkeeper,
-      x: 0.5,
-      y: 0.1,
-      displayName: 'GK',
+      id: 'gk',
+      name: 'Goalkeeper',
+      abbreviation: 'GK',
+      category: 'Goalkeeper',
+      defaultLocation: Offset(0.5, 0.05),
+    ),
+    // Defenders (2)
+    Position(
+      id: 'dl',
+      name: 'Left Defender',
+      abbreviation: 'DL',
+      category: 'Defense',
+      defaultLocation: Offset(0.25, 0.25),
     ),
     Position(
-      id: 'D1',
-      type: PositionType.defender,
-      x: 0.3,
-      y: 0.3,
-      displayName: 'D',
+      id: 'dr',
+      name: 'Right Defender',
+      abbreviation: 'DR',
+      category: 'Defense',
+      defaultLocation: Offset(0.75, 0.25),
+    ),
+    // Midfielders (3)
+    Position(
+      id: 'ml',
+      name: 'Left Midfielder',
+      abbreviation: 'ML',
+      category: 'Midfield',
+      defaultLocation: Offset(0.2, 0.45),
     ),
     Position(
-      id: 'D2',
-      type: PositionType.defender,
-      x: 0.7,
-      y: 0.3,
-      displayName: 'D',
+      id: 'mc',
+      name: 'Center Midfielder',
+      abbreviation: 'MC',
+      category: 'Midfield',
+      defaultLocation: Offset(0.5, 0.4),
     ),
     Position(
-      id: 'M1',
-      type: PositionType.midfielder,
-      x: 0.2,
-      y: 0.5,
-      displayName: 'M',
+      id: 'mr',
+      name: 'Right Midfielder',
+      abbreviation: 'MR',
+      category: 'Midfield',
+      defaultLocation: Offset(0.8, 0.45),
     ),
+    // Forward (1)
     Position(
-      id: 'M2',
-      type: PositionType.midfielder,
-      x: 0.5,
-      y: 0.5,
-      displayName: 'M',
-    ),
-    Position(
-      id: 'M3',
-      type: PositionType.midfielder,
-      x: 0.8,
-      y: 0.5,
-      displayName: 'M',
-    ),
-    Position(
-      id: 'F',
-      type: PositionType.forward,
-      x: 0.5,
-      y: 0.7,
-      displayName: 'F',
+      id: 'st',
+      name: 'Striker',
+      abbreviation: 'ST',
+      category: 'Forward',
+      defaultLocation: Offset(0.5, 0.65),
     ),
   ];
+
+  // Helper method to get positions by category
+  static List<Position> getByCategory(String category) {
+    return standardPositions
+        .where((position) => position.category == category)
+        .toList();
+  }
+
+  // Helper method to get position by ID
+  static Position? getById(String id) {
+    try {
+      return standardPositions.firstWhere((position) => position.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'abbreviation': abbreviation,
+      'category': category,
+    };
+  }
+
+  factory Position.fromMap(Map<String, dynamic> map) {
+    return Position(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      abbreviation: map['abbreviation'] as String,
+      category: map['category'] as String,
+      defaultLocation: const Offset(0.5, 0.5), // Default center position
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Position &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          name == other.name &&
+          abbreviation == other.abbreviation &&
+          category == other.category;
+
+  @override
+  int get hashCode =>
+      id.hashCode ^ name.hashCode ^ abbreviation.hashCode ^ category.hashCode;
+
+  @override
+  String toString() => '$name ($abbreviation)';
 }
