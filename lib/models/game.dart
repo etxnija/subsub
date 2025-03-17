@@ -123,6 +123,11 @@ class Game {
     };
   }
 
+  @override
+  String toString() {
+    return 'Game(id: $id, name: $name, numberOfPeriods: $numberOfPeriods, createdAt: $createdAt, status: $status, roster: $roster)';
+  }
+
   factory Game.fromMap(Map<String, dynamic> map) {
     return Game(
       id: map['id'] as int,

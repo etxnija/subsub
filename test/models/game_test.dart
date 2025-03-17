@@ -104,7 +104,7 @@ void main() {
       expect(game.toString(), contains('numberOfPeriods: 4'));
       expect(game.toString(), contains('createdAt: ${createdAt.toString()}'));
       expect(game.toString(), contains('roster: []'));
-      expect(game.toString(), contains('status: ${GameStatus.setup.name}'));
+      expect(game.toString(), contains('status: GameStatus.setup'));
     });
 
     test('should calculate substitutes correctly', () {
