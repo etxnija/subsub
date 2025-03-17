@@ -133,8 +133,9 @@ class Game {
       startTime: map['startTime'] != null
           ? DateTime.parse(map['startTime'] as String)
           : null,
-      endTime:
-          map['endTime'] != null ? DateTime.parse(map['endTime'] as String) : null,
+      endTime: map['endTime'] != null
+          ? DateTime.parse(map['endTime'] as String)
+          : null,
     );
   }
-} 
+}

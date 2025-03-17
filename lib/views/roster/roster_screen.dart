@@ -38,7 +38,8 @@ class RosterScreen extends ConsumerWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete),
-                  onPressed: () => _showDeleteConfirmation(context, ref, player),
+                  onPressed: () =>
+                      _showDeleteConfirmation(context, ref, player),
                 ),
               ],
             ),
@@ -80,9 +81,8 @@ class RosterScreen extends ConsumerWidget {
             onPressed: () {
               if (nameController.text.isNotEmpty &&
                   numberController.text.isNotEmpty) {
-                ref
-                    .read(rosterProvider.notifier)
-                    .addPlayer(nameController.text, int.parse(numberController.text));
+                ref.read(rosterProvider.notifier).addPlayer(
+                    nameController.text, int.parse(numberController.text));
                 Navigator.pop(context);
               }
             },
@@ -96,7 +96,8 @@ class RosterScreen extends ConsumerWidget {
   Future<void> _showEditPlayerDialog(
       BuildContext context, WidgetRef ref, Player player) async {
     final nameController = TextEditingController(text: player.name);
-    final numberController = TextEditingController(text: player.number.toString());
+    final numberController =
+        TextEditingController(text: player.number.toString());
 
     return showDialog(
       context: context,
@@ -167,4 +168,4 @@ class RosterScreen extends ConsumerWidget {
       ),
     );
   }
-} 
+}

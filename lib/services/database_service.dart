@@ -164,4 +164,4 @@ class DatabaseService {
     await db.delete('game_roster');
     await db.delete('position_history');
   }
-} 
+}
