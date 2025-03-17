@@ -136,6 +136,7 @@ class Game {
       endTime: map['endTime'] != null
           ? DateTime.parse(map['endTime'] as String)
           : null,
+      roster: [], // Initialize with empty roster, should be populated separately
     );
   }
 }

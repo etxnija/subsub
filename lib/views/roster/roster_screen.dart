@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/roster_provider.dart';
 import '../../models/player.dart';
+import '../../providers/roster_provider.dart';
 
 class RosterScreen extends ConsumerWidget {
   const RosterScreen({super.key});
