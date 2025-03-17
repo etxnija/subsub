@@ -19,6 +19,8 @@ dependencies:
   # UI utilities
   google_fonts: ^6.1.0
   flutter_svg: ^2.0.10+1
+  # Navigation
+  go_router: ^13.2.0
 
 dev_dependencies:
   flutter_test:

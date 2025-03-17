@@ -1,36 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'views/roster/roster_screen.dart';
+import 'package:subsub/router.dart';
 
 void main() {
   runApp(const ProviderScope(child: SubSubApp()));
 }
 
-class SubSubApp extends StatelessWidget {
+class SubSubApp extends ConsumerWidget {
   const SubSubApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
       title: 'SubSub',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green,
-          brightness: Brightness.light,
-        ),
-        textTheme: GoogleFonts.robotoTextTheme(),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green,
-          brightness: Brightness.dark,
-        ),
-        textTheme: GoogleFonts.robotoTextTheme(ThemeData.dark().textTheme),
-        useMaterial3: true,
-      ),
-      home: const RosterScreen(),
+      routerConfig: router,
     );
   }
 }
