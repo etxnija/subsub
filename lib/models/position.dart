@@ -1,9 +1,4 @@
-enum PositionType {
-  goalkeeper,
-  defender,
-  midfielder,
-  forward,
-}
+enum PositionType { goalkeeper, defender, midfielder, forward }
 
 class Position {
   final String id; // e.g., "GK", "D1", "D2", "M1", "M2", "M3", "F"

@@ -36,19 +36,17 @@ void main() {
       expect(game.id, equals(1));
       expect(game.name, equals('Game vs Team A'));
       expect(game.numberOfPeriods, equals(4));
-      expect(game.createdAt.toIso8601String(),
-          equals(createdAt.toIso8601String()));
+      expect(
+        game.createdAt.toIso8601String(),
+        equals(createdAt.toIso8601String()),
+      );
       expect(game.status, equals(GameStatus.setup));
       expect(game.roster, isEmpty);
     });
 
     test('should convert Game to map', () {
       final createdAt = DateTime.now();
-      const player = Player(
-        id: 1,
-        name: 'John Doe',
-        number: 10,
-      );
+      const player = Player(id: 1, name: 'John Doe', number: 10);
 
       final game = Game(
         id: 1,
@@ -77,10 +75,7 @@ void main() {
         roster: const [],
       );
 
-      final newGame = game.copyWith(
-        name: 'Game vs Team B',
-        numberOfPeriods: 2,
-      );
+      final newGame = game.copyWith(name: 'Game vs Team B', numberOfPeriods: 2);
 
       expect(newGame.id, equals(1));
       expect(newGame.name, equals('Game vs Team B'));

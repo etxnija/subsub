@@ -25,9 +25,7 @@ class RosterScreen extends ConsumerWidget {
         itemBuilder: (context, index) {
           final player = roster[index];
           return ListTile(
-            leading: CircleAvatar(
-              child: Text(player.number.toString()),
-            ),
+            leading: CircleAvatar(child: Text(player.number.toString())),
             title: Text(player.name),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -38,8 +36,8 @@ class RosterScreen extends ConsumerWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete),
-                  onPressed: () =>
-                      _showDeleteConfirmation(context, ref, player),
+                  onPressed:
+                      () => _showDeleteConfirmation(context, ref, player),
                 ),
               ],
             ),
@@ -55,117 +53,133 @@ class RosterScreen extends ConsumerWidget {
 
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Player'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
-              textCapitalization: TextCapitalization.words,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Add Player'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                TextField(
+                  controller: numberController,
+                  decoration: const InputDecoration(labelText: 'Number'),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
             ),
-            TextField(
-              controller: numberController,
-              decoration: const InputDecoration(labelText: 'Number'),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (nameController.text.isNotEmpty &&
+                      numberController.text.isNotEmpty) {
+                    ref
+                        .read(rosterProvider.notifier)
+                        .addPlayer(
+                          nameController.text,
+                          int.parse(numberController.text),
+                        );
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('Add'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              if (nameController.text.isNotEmpty &&
-                  numberController.text.isNotEmpty) {
-                ref.read(rosterProvider.notifier).addPlayer(
-                    nameController.text, int.parse(numberController.text));
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
     );
   }
 
   Future<void> _showEditPlayerDialog(
-      BuildContext context, WidgetRef ref, Player player) async {
+    BuildContext context,
+    WidgetRef ref,
+    Player player,
+  ) async {
     final nameController = TextEditingController(text: player.name);
-    final numberController =
-        TextEditingController(text: player.number.toString());
+    final numberController = TextEditingController(
+      text: player.number.toString(),
+    );
 
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Player'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
-              textCapitalization: TextCapitalization.words,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Edit Player'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                TextField(
+                  controller: numberController,
+                  decoration: const InputDecoration(labelText: 'Number'),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
             ),
-            TextField(
-              controller: numberController,
-              decoration: const InputDecoration(labelText: 'Number'),
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (nameController.text.isNotEmpty &&
+                      numberController.text.isNotEmpty) {
+                    ref
+                        .read(rosterProvider.notifier)
+                        .updatePlayer(
+                          Player(
+                            id: player.id,
+                            name: nameController.text,
+                            number: int.parse(numberController.text),
+                          ),
+                        );
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              if (nameController.text.isNotEmpty &&
-                  numberController.text.isNotEmpty) {
-                ref.read(rosterProvider.notifier).updatePlayer(
-                      Player(
-                        id: player.id,
-                        name: nameController.text,
-                        number: int.parse(numberController.text),
-                      ),
-                    );
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
     );
   }
 
   Future<void> _showDeleteConfirmation(
-      BuildContext context, WidgetRef ref, Player player) {
+    BuildContext context,
+    WidgetRef ref,
+    Player player,
+  ) {
     return showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Player'),
-        content: Text('Are you sure you want to delete ${player.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Player'),
+            content: Text('Are you sure you want to delete ${player.name}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  ref.read(rosterProvider.notifier).deletePlayer(player.id!);
+                  Navigator.pop(context);
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              ref.read(rosterProvider.notifier).deletePlayer(player.id!);
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
   }
 }

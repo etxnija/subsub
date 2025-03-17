@@ -48,10 +48,7 @@ void main() {
 
     // Build our app and trigger a frame.
     await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: const SubSubApp(),
-      ),
+      UncontrolledProviderScope(container: container, child: const SubSubApp()),
     );
 
     // Verify that we have the roster screen title

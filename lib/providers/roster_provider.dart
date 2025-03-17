@@ -4,8 +4,9 @@ import '../services/database_service.dart';
 
 final databaseProvider = Provider((ref) => DatabaseService());
 
-final rosterProvider =
-    StateNotifierProvider<RosterNotifier, List<Player>>((ref) {
+final rosterProvider = StateNotifierProvider<RosterNotifier, List<Player>>((
+  ref,
+) {
   final database = ref.watch(databaseProvider);
   return RosterNotifier(database);
 });
@@ -31,7 +32,7 @@ class RosterNotifier extends StateNotifier<List<Player>> {
     await _database.updatePlayer(player);
     state = [
       for (final p in state)
-        if (p.id == player.id) player else p
+        if (p.id == player.id) player else p,
     ];
   }
 
