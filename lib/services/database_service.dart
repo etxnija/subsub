@@ -5,7 +5,9 @@ import 'package:sqflite/sqflite.dart';
 import '../models/game.dart';
 import '../models/player.dart';
 
-final databaseServiceProvider = Provider<DatabaseService>((ref) => DatabaseService());
+final databaseServiceProvider = Provider<DatabaseService>(
+  (ref) => DatabaseService(),
+);
 
 class DatabaseService {
   static Database? _database;
@@ -20,11 +22,7 @@ class DatabaseService {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, databaseName);
 
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createDatabase,
-    );
+    return await openDatabase(path, version: 1, onCreate: _createDatabase);
   }
 
   Future<void> _createDatabase(Database db, int version) async {
@@ -100,11 +98,7 @@ class DatabaseService {
 
   Future<void> deletePlayer(int id) async {
     final db = await database;
-    await db.delete(
-      'players',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('players', where: 'id = ?', whereArgs: [id]);
   }
 
   // Game operations
@@ -114,10 +108,7 @@ class DatabaseService {
 
     // Insert game roster
     for (final player in game.roster) {
-      await db.insert('game_roster', {
-        'gameId': gameId,
-        'playerId': player.id,
-      });
+      await db.insert('game_roster', {'gameId': gameId, 'playerId': player.id});
     }
 
     return gameId;
@@ -144,22 +135,21 @@ class DatabaseService {
 
   Future<List<Player>> _getGameRoster(int gameId) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT p.* FROM players p
       INNER JOIN game_roster gr ON gr.playerId = p.id
       WHERE gr.gameId = ?
-    ''', [gameId]);
+    ''',
+      [gameId],
+    );
 
     return List.generate(maps.length, (i) => Player.fromMap(maps[i]));
   }
 
   Future<void> deleteGame(int id) async {
     final db = await database;
-    await db.delete(
-      'games',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('games', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> clearAllGames() async {

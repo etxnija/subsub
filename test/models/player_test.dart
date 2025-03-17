@@ -12,11 +12,7 @@ void main() {
     });
 
     test('should create a Player from map', () {
-      final map = {
-        'id': 1,
-        'name': 'John Doe',
-        'number': 10,
-      };
+      final map = {'id': 1, 'name': 'John Doe', 'number': 10};
 
       final player = Player.fromMap(map);
 
@@ -26,11 +22,7 @@ void main() {
     });
 
     test('should convert Player to map', () {
-      const player = Player(
-        id: 1,
-        name: 'John Doe',
-        number: 10,
-      );
+      const player = Player(id: 1, name: 'John Doe', number: 10);
 
       final map = player.toMap();
 
@@ -40,16 +32,9 @@ void main() {
     });
 
     test('should copy with new values', () {
-      const player = Player(
-        id: 1,
-        name: 'John Doe',
-        number: 10,
-      );
+      const player = Player(id: 1, name: 'John Doe', number: 10);
 
-      final newPlayer = player.copyWith(
-        name: 'Jane Doe',
-        number: 11,
-      );
+      final newPlayer = player.copyWith(name: 'Jane Doe', number: 11);
 
       expect(newPlayer.id, equals(1));
       expect(newPlayer.name, equals('Jane Doe'));
@@ -57,11 +42,7 @@ void main() {
     });
 
     test('toString should contain all properties', () {
-      const player = Player(
-        id: 1,
-        name: 'John Doe',
-        number: 10,
-      );
+      const player = Player(id: 1, name: 'John Doe', number: 10);
 
       expect(player.toString(), contains('id: 1'));
       expect(player.toString(), contains('name: John Doe'));

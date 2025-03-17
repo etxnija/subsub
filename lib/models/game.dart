@@ -1,12 +1,7 @@
 import 'player.dart';
 import 'position.dart';
 
-enum GameStatus {
-  setup,
-  inProgress,
-  paused,
-  completed,
-}
+enum GameStatus { setup, inProgress, paused, completed }
 
 class PlayerPosition {
   final Player player;
@@ -135,13 +130,16 @@ class Game {
       numberOfPeriods: map['numberOfPeriods'] as int,
       createdAt: DateTime.parse(map['createdAt'] as String),
       status: GameStatus.values.firstWhere((e) => e.name == map['status']),
-      startTime: map['startTime'] != null
-          ? DateTime.parse(map['startTime'] as String)
-          : null,
-      endTime: map['endTime'] != null
-          ? DateTime.parse(map['endTime'] as String)
-          : null,
-      roster: [], // Initialize with empty roster, should be populated separately
+      startTime:
+          map['startTime'] != null
+              ? DateTime.parse(map['startTime'] as String)
+              : null,
+      endTime:
+          map['endTime'] != null
+              ? DateTime.parse(map['endTime'] as String)
+              : null,
+      roster:
+          [], // Initialize with empty roster, should be populated separately
     );
   }
 }
