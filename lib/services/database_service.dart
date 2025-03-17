@@ -1,7 +1,11 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+
 import '../models/game.dart';
 import '../models/player.dart';
+
+final databaseServiceProvider = Provider<DatabaseService>((ref) => DatabaseService());
 
 class DatabaseService {
   static Database? _database;
