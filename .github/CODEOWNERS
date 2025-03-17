@@ -1,0 +1,11 @@
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# they will be requested for review when someone opens a pull request.
+* @etxnija
+
+# Flutter app specific files
+lib/ @etxnija
+test/ @etxnija
+
+# CI/CD related files
+.github/workflows/ @etxnija
