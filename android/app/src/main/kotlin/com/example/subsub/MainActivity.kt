@@ -1,4 +1,4 @@
-package com.subsub.subsub
+package com.example.subsub
 
 import io.flutter.embedding.android.FlutterActivity
 
