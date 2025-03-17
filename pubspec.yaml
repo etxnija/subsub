@@ -1,0 +1,30 @@
+name: subsub
+description: "A soccer team substitution manager"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  # State management
+  flutter_riverpod: ^2.5.1
+  # Local storage
+  sqflite: ^2.3.2
+  path: ^1.8.3
+  shared_preferences: ^2.2.2
+  # UI utilities
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.10+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  # We'll add assets later as needed 
