@@ -4,8 +4,8 @@ import 'package:subsub/models/player.dart';
 void main() {
   group('Player', () {
     test('should create a Player instance', () {
-      final player = Player(name: 'John Doe', number: 10);
-
+      const player = Player(name: 'John Doe', number: 10);
+      
       expect(player.name, equals('John Doe'));
       expect(player.number, equals(10));
       expect(player.id, isNull);
@@ -26,7 +26,7 @@ void main() {
     });
 
     test('should convert Player to map', () {
-      final player = Player(
+      const player = Player(
         id: 1,
         name: 'John Doe',
         number: 10,
@@ -40,7 +40,7 @@ void main() {
     });
 
     test('should copy with new values', () {
-      final player = Player(
+      const player = Player(
         id: 1,
         name: 'John Doe',
         number: 10,
@@ -57,7 +57,7 @@ void main() {
     });
 
     test('toString should contain all properties', () {
-      final player = Player(
+      const player = Player(
         id: 1,
         name: 'John Doe',
         number: 10,

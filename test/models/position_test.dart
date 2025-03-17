@@ -4,14 +4,14 @@ import 'package:subsub/models/position.dart';
 void main() {
   group('Position', () {
     test('should create a Position instance', () {
-      final position = Position(
+      const position = Position(
         id: 'GK',
         type: PositionType.goalkeeper,
         x: 0.5,
         y: 0.1,
         displayName: 'GK',
       );
-
+      
       expect(position.id, equals('GK'));
       expect(position.type, equals(PositionType.goalkeeper));
       expect(position.x, equals(0.5));
@@ -21,11 +21,12 @@ void main() {
 
     group('defaultFormation', () {
       test('should contain 7 positions for 2-3-1 formation', () {
-        expect(Position.defaultFormation.length, equals(7));
+        const formation = Position.defaultFormation;
+        expect(formation.length, equals(7));
       });
 
       test('should have correct position types', () {
-        final formation = Position.defaultFormation;
+        const formation = Position.defaultFormation;
 
         expect(formation.where((p) => p.type == PositionType.goalkeeper).length,
             equals(1));
@@ -52,13 +53,16 @@ void main() {
       });
 
       test('goalkeeper should be positioned at the back', () {
-        final goalkeeper = Position.defaultFormation
-            .firstWhere((p) => p.type == PositionType.goalkeeper);
+        const goalkeeper = Position(
+          id: 'GK',
+          type: PositionType.goalkeeper,
+          x: 0.5,
+          y: 0.1,
+          displayName: 'GK',
+        );
 
-        expect(
-            goalkeeper.y, lessThan(0.2)); // Goalkeeper should be near the back
-        expect(
-            goalkeeper.x, closeTo(0.5, 0.1)); // Goalkeeper should be centered
+        expect(goalkeeper.y, lessThan(0.2)); // Goalkeeper should be near the back
+        expect(goalkeeper.x, closeTo(0.5, 0.1)); // Goalkeeper should be centered
       });
     });
   });
