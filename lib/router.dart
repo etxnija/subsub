@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:subsub/views/roster/roster_screen.dart';
 import 'package:subsub/screens/games_screen.dart';
 import 'package:subsub/screens/field_screen.dart';
+import 'package:subsub/screens/game_play_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -53,6 +54,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/games',
             builder: (context, state) => const GamesScreen(),
+            routes: [
+              GoRoute(
+                path: 'play/:gameId',
+                builder: (context, state) {
+                  final gameId = state.pathParameters['gameId']!;
+                  return GamePlayScreen(gameId: gameId);
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/field',

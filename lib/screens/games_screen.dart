@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:subsub/models/game.dart';
 import 'package:subsub/providers/game_provider.dart';
@@ -11,31 +12,11 @@ class GamesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final games = ref.watch(gamesProvider);
-    final dateFormat = DateFormat('MMM d, yyyy');
-
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Games'),
       ),
-      body: games.isEmpty
-          ? _buildEmptyState(context)
-          : ListView.builder(
-              itemCount: games.length,
-              itemBuilder: (context, index) {
-                final game = games[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListTile(
-                    title: Text('vs ${game.opponent}'),
-                    subtitle: Text(dateFormat.format(game.date)),
-                    trailing: Text('${game.startingLineup.length}/7 starters'),
-                    onTap: () {
-                      // Show game detail screen when implemented
-                    },
-                  ),
-                );
-              },
-            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -45,30 +26,142 @@ class GamesScreen extends ConsumerWidget {
         },
         child: const Icon(Icons.add),
       ),
+      body: games.isEmpty
+          ? const Center(
+              child: Text('No games yet. Add a game to get started.'),
+            )
+          : ListView.builder(
+              itemCount: games.length,
+              itemBuilder: (context, index) {
+                final game = games[index];
+                final playerCount = game.startingLineup.length + game.substitutes.length;
+                final isGameReady = game.startingLineup.length >= 7;
+                
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    game.opponent,
+                                    style: Theme.of(context).textTheme.titleLarge,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    DateFormat.yMMMMd().format(game.date),
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _buildGameStatusBadge(context, game),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            Chip(
+                              label: Text('$playerCount players'),
+                              backgroundColor: Colors.grey[200],
+                            ),
+                            Chip(
+                              label: Text('${game.startingLineup.length}/7 starters'),
+                              backgroundColor: isGameReady 
+                                ? Colors.green[100] 
+                                : Colors.orange[100],
+                            ),
+                            if (game.periods.isNotEmpty)
+                              Chip(
+                                label: Text('${game.periods.length} periods'),
+                                backgroundColor: Colors.blue[100],
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              onPressed: () {
+                                // Navigation to edit lineup will be added later
+                              },
+                              icon: const Icon(Icons.edit),
+                              label: const Text('Edit'),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton.icon(
+                              onPressed: isGameReady ? () {
+                                context.push('/games/play/${game.id}');
+                              } : null,
+                              icon: const Icon(Icons.sports),
+                              label: const Text('Play'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  
+  Widget _buildGameStatusBadge(BuildContext context, Game game) {
+    Color color;
+    String text;
+    IconData icon;
+    
+    switch (game.status) {
+      case GameStatus.setup:
+        color = Colors.grey;
+        text = 'Setup';
+        icon = Icons.settings;
+        break;
+      case GameStatus.inProgress:
+        color = Colors.green;
+        text = 'In Progress';
+        icon = Icons.play_arrow;
+        break;
+      case GameStatus.paused:
+        color = Colors.orange;
+        text = 'Paused';
+        icon = Icons.pause;
+        break;
+      case GameStatus.completed:
+        color = Colors.blue;
+        text = 'Completed';
+        icon = Icons.check_circle;
+        break;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.sports_soccer,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 4),
           Text(
-            'No Games Yet',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap the + button to set up a new game',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            text,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
