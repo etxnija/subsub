@@ -24,7 +24,7 @@ class Position {
       name: 'Goalkeeper',
       abbreviation: 'GK',
       category: 'Goalkeeper',
-      defaultLocation: Offset(0.5, 0.05),
+      defaultLocation: Offset(0.5, 0.18),  // Aligned with goal area
     ),
     // Defenders (2)
     Position(
@@ -32,14 +32,14 @@ class Position {
       name: 'Left Defender',
       abbreviation: 'DL',
       category: 'Defense',
-      defaultLocation: Offset(0.25, 0.25),
+      defaultLocation: Offset(0.25, 0.35),  // Aligned with penalty area width
     ),
     Position(
       id: 'dr',
       name: 'Right Defender',
       abbreviation: 'DR',
       category: 'Defense',
-      defaultLocation: Offset(0.75, 0.25),
+      defaultLocation: Offset(0.75, 0.35),  // Aligned with penalty area width
     ),
     // Midfielders (3)
     Position(
@@ -47,21 +47,21 @@ class Position {
       name: 'Left Midfielder',
       abbreviation: 'ML',
       category: 'Midfield',
-      defaultLocation: Offset(0.2, 0.45),
+      defaultLocation: Offset(0.2, 0.58),  // Wider spread, aligned with center
     ),
     Position(
       id: 'mc',
       name: 'Center Midfielder',
       abbreviation: 'MC',
       category: 'Midfield',
-      defaultLocation: Offset(0.5, 0.4),
+      defaultLocation: Offset(0.5, 0.52),  // Just above center line
     ),
     Position(
       id: 'mr',
       name: 'Right Midfielder',
       abbreviation: 'MR',
       category: 'Midfield',
-      defaultLocation: Offset(0.8, 0.45),
+      defaultLocation: Offset(0.8, 0.58),  // Wider spread, aligned with center
     ),
     // Forward (1)
     Position(
@@ -69,7 +69,7 @@ class Position {
       name: 'Striker',
       abbreviation: 'ST',
       category: 'Forward',
-      defaultLocation: Offset(0.5, 0.65),
+      defaultLocation: Offset(0.5, 0.75),  // Centered in attacking third
     ),
   ];
 
