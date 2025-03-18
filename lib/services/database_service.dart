@@ -96,6 +96,41 @@ class DatabaseService {
         FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE
       )
     ''');
+
+    // Seed the database with initial players
+    await seedTopPlayers(db);
+  }
+
+  Future<void> seedTopPlayers([Database? providedDb]) async {
+    final db = providedDb ?? await database;
+    
+    // Check if we already have players
+    final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM players'));
+    if (count != null && count > 0) return; // Don't seed if we already have players
+    
+    final topPlayers = [
+      Player(id: const Uuid().v4(), name: 'Erling Haaland', number: 9),
+      Player(id: const Uuid().v4(), name: 'Kylian Mbappé', number: 7),
+      Player(id: const Uuid().v4(), name: 'Kevin De Bruyne', number: 17),
+      Player(id: const Uuid().v4(), name: 'Jude Bellingham', number: 5),
+      Player(id: const Uuid().v4(), name: 'Vinicius Jr', number: 20),
+      Player(id: const Uuid().v4(), name: 'Rodri', number: 16),
+      Player(id: const Uuid().v4(), name: 'Harry Kane', number: 9),
+      Player(id: const Uuid().v4(), name: 'Mohamed Salah', number: 11),
+      Player(id: const Uuid().v4(), name: 'Bukayo Saka', number: 7),
+      Player(id: const Uuid().v4(), name: 'Phil Foden', number: 47),
+    ];
+
+    // Insert all players in a transaction
+    await db.transaction((txn) async {
+      for (final player in topPlayers) {
+        await txn.insert(
+          'players',
+          player.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
   }
 
   // Generic CRUD operations
