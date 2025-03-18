@@ -5,6 +5,7 @@ import 'package:subsub/models/player.dart';
 import 'package:subsub/models/position.dart';
 import 'package:subsub/providers/game_provider.dart';
 import 'dart:async';
+import 'dart:ui';
 
 class GamePlayScreen extends ConsumerStatefulWidget {
   final String gameId;
@@ -199,8 +200,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     
     final currentPeriod = _game!.periods.isEmpty ? null : _game!.periods[_activePeriod];
     final periodTimeInSeconds = currentPeriod != null ? currentPeriod.durationMinutes * 60 : 0;
-    final remainingSeconds = periodTimeInSeconds - _activeSeconds;
-    final formattedTime = '${remainingSeconds ~/ 60}:${(remainingSeconds % 60).toString().padLeft(2, '0')}';
+    final isOvertime = _activeSeconds > periodTimeInSeconds;
+    final minutes = _activeSeconds ~/ 60;
+    final seconds = _activeSeconds % 60;
+    final formattedTime = '$minutes:${seconds.toString().padLeft(2, '0')}';
 
     return Scaffold(
       appBar: AppBar(
@@ -252,12 +255,18 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                         'Period ${currentPeriod.number}',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      Text(
-                        _isPeriodActive ? formattedTime : 'Not Active',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: _isPeriodActive 
-                              ? remainingSeconds < 60 ? Colors.red : null
-                              : Colors.grey,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isOvertime ? Colors.red.withOpacity(0.2) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          _isPeriodActive ? formattedTime : 'Not Active',
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            color: !_isPeriodActive ? Colors.grey : (isOvertime ? Colors.red : null),
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
                       ),
                       if (_isPeriodActive)
