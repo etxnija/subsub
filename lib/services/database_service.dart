@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:convert';
 
 import '../models/player.dart';
 import '../models/game.dart';
@@ -13,7 +14,7 @@ final databaseServiceProvider = Provider<DatabaseService>(
 class DatabaseService {
   static Database? _database;
   static const String databaseName = 'subsub.db';
-  static const int _databaseVersion = 4; // Increase version to force rebuild
+  static const int _databaseVersion = 5; // Increase version to add periods
 
   Future<Database> get database async {
     _database ??= await _initDatabase();
@@ -78,7 +79,9 @@ class DatabaseService {
         date TEXT NOT NULL,
         opponent TEXT NOT NULL,
         startingLineup TEXT NOT NULL,
-        substitutes TEXT NOT NULL
+        substitutes TEXT NOT NULL,
+        periods TEXT NOT NULL DEFAULT '[]',
+        status INTEGER NOT NULL DEFAULT 0
       )
     ''');
     
@@ -260,5 +263,73 @@ class DatabaseService {
         );
       }
     });
+  }
+
+  Future<List<Game>> getGames() async {
+    final db = await database;
+    
+    // Get all games
+    final List<Map<String, dynamic>> games = await db.query('games');
+    
+    // For each game, get the lineup
+    final List<Game> result = [];
+    for (final gameMap in games) {
+      final gameId = gameMap['id'] as String;
+      
+      // Get starting lineup
+      final startingLineup = await db.query(
+        'game_lineup',
+        where: 'game_id = ? AND is_substitute = 0',
+        whereArgs: [gameId],
+      );
+      
+      // Get substitutes
+      final substitutes = await db.query(
+        'game_lineup',
+        where: 'game_id = ? AND is_substitute = 1',
+        whereArgs: [gameId],
+      );
+      
+      // Get player details for each entry
+      final Map<String, Player> lineup = {};
+      for (final entry in startingLineup) {
+        final positionId = entry['position_id'] as String;
+        final playerId = entry['player_id'] as String;
+        
+        final playerData = await db.query(
+          'players',
+          where: 'id = ?',
+          whereArgs: [playerId],
+        );
+        
+        if (playerData.isNotEmpty) {
+          lineup[positionId] = Player.fromMap(playerData.first);
+        }
+      }
+      
+      final List<Player> subs = [];
+      for (final entry in substitutes) {
+        final playerId = entry['player_id'] as String;
+        
+        final playerData = await db.query(
+          'players',
+          where: 'id = ?',
+          whereArgs: [playerId],
+        );
+        
+        if (playerData.isNotEmpty) {
+          subs.add(Player.fromMap(playerData.first));
+        }
+      }
+      
+      // Create the Game object
+      result.add(Game.fromMap({
+        ...gameMap,
+        'startingLineup': jsonEncode(lineup.map((key, value) => MapEntry(key, value.toMap()))),
+        'substitutes': jsonEncode(subs.map((p) => p.toMap()).toList()),
+      }));
+    }
+    
+    return result;
   }
 }
