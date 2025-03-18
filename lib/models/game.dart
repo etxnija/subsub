@@ -4,6 +4,47 @@ import 'position.dart';
 
 enum GameStatus { setup, inProgress, paused, completed }
 
+class GamePeriod {
+  final int number;
+  final int durationMinutes;
+  DateTime? startTime;
+  DateTime? endTime;
+
+  GamePeriod({
+    required this.number,
+    required this.durationMinutes,
+    this.startTime,
+    this.endTime,
+  });
+
+  bool get isActive => startTime != null && endTime == null;
+  bool get isCompleted => startTime != null && endTime != null;
+  
+  Duration get elapsed {
+    if (startTime == null) return Duration.zero;
+    final end = endTime ?? DateTime.now();
+    return end.difference(startTime!);
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'number': number,
+      'durationMinutes': durationMinutes,
+      'startTime': startTime?.toIso8601String(),
+      'endTime': endTime?.toIso8601String(),
+    };
+  }
+
+  factory GamePeriod.fromMap(Map<String, dynamic> map) {
+    return GamePeriod(
+      number: map['number'] as int,
+      durationMinutes: map['durationMinutes'] as int,
+      startTime: map['startTime'] != null ? DateTime.parse(map['startTime'] as String) : null,
+      endTime: map['endTime'] != null ? DateTime.parse(map['endTime'] as String) : null,
+    );
+  }
+}
+
 class PlayerPosition {
   final Player player;
   final Position position;
@@ -38,6 +79,8 @@ class Game {
   final String opponent;
   final Map<String, Player> startingLineup; // Position ID -> Player
   final List<Player> substitutes;
+  final List<GamePeriod> periods;
+  final GameStatus status;
 
   const Game({
     required this.id,
@@ -45,6 +88,8 @@ class Game {
     required this.opponent,
     required this.startingLineup,
     required this.substitutes,
+    this.periods = const [],
+    this.status = GameStatus.setup,
   });
 
   Game copyWith({
@@ -53,6 +98,8 @@ class Game {
     String? opponent,
     Map<String, Player>? startingLineup,
     List<Player>? substitutes,
+    List<GamePeriod>? periods,
+    GameStatus? status,
   }) {
     return Game(
       id: id ?? this.id,
@@ -60,6 +107,8 @@ class Game {
       opponent: opponent ?? this.opponent,
       startingLineup: startingLineup ?? this.startingLineup,
       substitutes: substitutes ?? this.substitutes,
+      periods: periods ?? this.periods,
+      status: status ?? this.status,
     );
   }
 
@@ -75,6 +124,8 @@ class Game {
       'opponent': opponent,
       'startingLineup': jsonEncode(lineup),
       'substitutes': jsonEncode(substitutes.map((p) => p.toMap()).toList()),
+      'periods': jsonEncode(periods.map((p) => p.toMap()).toList()),
+      'status': status.index,
     };
   }
 
@@ -93,12 +144,34 @@ class Game {
       .map((item) => Player.fromMap(item as Map<String, dynamic>))
       .toList();
 
+    // Parse periods
+    List<GamePeriod> periods = [];
+    if (map['periods'] != null) {
+      final periodsJson = jsonDecode(map['periods'] as String) as List<dynamic>;
+      periods = periodsJson
+        .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
+        .toList();
+    }
+
     return Game(
       id: map['id'] as String,
       date: DateTime.parse(map['date'] as String),
       opponent: map['opponent'] as String,
       startingLineup: lineup,
       substitutes: subs,
+      periods: periods,
+      status: GameStatus.values[map['status'] as int? ?? 0],
+    );
+  }
+
+  // Helper to create default 7v7 game periods
+  static List<GamePeriod> defaultPeriods({int count = 3, int durationMinutes = 15}) {
+    return List.generate(
+      count,
+      (index) => GamePeriod(
+        number: index + 1,
+        durationMinutes: durationMinutes,
+      ),
     );
   }
 }

@@ -19,6 +19,8 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
   final _opponentController = TextEditingController();
   DateTime _gameDate = DateTime.now();
   final Set<Player> _selectedPlayers = {};
+  int _periodCount = 3;
+  int _periodDuration = 15;
   
   @override
   Widget build(BuildContext context) {
@@ -92,6 +94,77 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
             ),
             const SizedBox(height: 16),
             
+            // Period Configuration
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Game Periods',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            decoration: const InputDecoration(
+                              labelText: 'Number of Periods',
+                              border: OutlineInputBorder(),
+                            ),
+                            value: _periodCount,
+                            items: [2, 3, 4].map((count) {
+                              return DropdownMenuItem<int>(
+                                value: count,
+                                child: Text('$count periods'),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _periodCount = value);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            decoration: const InputDecoration(
+                              labelText: 'Period Duration',
+                              border: OutlineInputBorder(),
+                            ),
+                            value: _periodDuration,
+                            items: [10, 15, 20, 25, 30].map((minutes) {
+                              return DropdownMenuItem<int>(
+                                value: minutes,
+                                child: Text('$minutes minutes'),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() => _periodDuration = value);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Total game time: ${_periodCount * _periodDuration} minutes',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
             // Player Selection Section
             Card(
               child: Padding(
@@ -150,6 +223,10 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
       opponent: _opponentController.text,
       startingLineup: {}, // Empty lineup to be filled in the next screen
       substitutes: _selectedPlayers.toList(), // All selected players start as subs
+      periods: Game.defaultPeriods(
+        count: _periodCount,
+        durationMinutes: _periodDuration,
+      ),
     );
     
     // Navigate to field screen for lineup selection

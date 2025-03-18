@@ -8,27 +8,22 @@ import 'package:subsub/services/database_service.dart';
 const String kDbVersionKey = 'db_version';
 const int kCurrentDbVersion = 3; // Match this with the version in database_service.dart
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Check if we need to reset the database
-  final prefs = await SharedPreferences.getInstance();
-  final storedVersion = prefs.getInt(kDbVersionKey) ?? 0;
+  // Reset the database to handle schema changes
+  final dbService = DatabaseService();
+  await dbService.resetDatabase();
   
-  if (storedVersion < kCurrentDbVersion) {
-    // Reset database for schema changes
-    final dbService = DatabaseService();
-    await dbService.resetDatabase();
-    
-    // Update stored version
-    await prefs.setInt(kDbVersionKey, kCurrentDbVersion);
-  }
-  
-  runApp(const ProviderScope(child: SubSubApp()));
+  runApp(
+    const ProviderScope(
+      child: App(),
+    ),
+  );
 }
 
-class SubSubApp extends ConsumerWidget {
-  const SubSubApp({super.key});
+class App extends ConsumerWidget {
+  const App({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
