@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'player.dart';
 import 'position.dart';
 
@@ -32,114 +33,72 @@ class PlayerPosition {
 }
 
 class Game {
-  final int? id;
-  final String name;
-  final int numberOfPeriods;
-  final DateTime createdAt;
-  final List<Player> roster;
-  final GameStatus status;
-  final DateTime? startTime;
-  final DateTime? endTime;
-  final List<PlayerPosition> positionHistory;
-  final Map<String, Player?> currentPositions; // position.id -> Player
+  final String id;
+  final DateTime date;
+  final String opponent;
+  final Map<String, Player> startingLineup; // Position ID -> Player
+  final List<Player> substitutes;
 
   const Game({
-    this.id,
-    required this.name,
-    required this.numberOfPeriods,
-    required this.createdAt,
-    required this.roster,
-    this.status = GameStatus.setup,
-    this.startTime,
-    this.endTime,
-    this.positionHistory = const [],
-    this.currentPositions = const {},
+    required this.id,
+    required this.date,
+    required this.opponent,
+    required this.startingLineup,
+    required this.substitutes,
   });
 
   Game copyWith({
-    int? id,
-    String? name,
-    int? numberOfPeriods,
-    DateTime? createdAt,
-    List<Player>? roster,
-    GameStatus? status,
-    DateTime? startTime,
-    DateTime? endTime,
-    List<PlayerPosition>? positionHistory,
-    Map<String, Player?>? currentPositions,
+    String? id,
+    DateTime? date,
+    String? opponent,
+    Map<String, Player>? startingLineup,
+    List<Player>? substitutes,
   }) {
     return Game(
       id: id ?? this.id,
-      name: name ?? this.name,
-      numberOfPeriods: numberOfPeriods ?? this.numberOfPeriods,
-      createdAt: createdAt ?? this.createdAt,
-      roster: roster ?? this.roster,
-      status: status ?? this.status,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      positionHistory: positionHistory ?? this.positionHistory,
-      currentPositions: currentPositions ?? this.currentPositions,
+      date: date ?? this.date,
+      opponent: opponent ?? this.opponent,
+      startingLineup: startingLineup ?? this.startingLineup,
+      substitutes: substitutes ?? this.substitutes,
     );
   }
 
-  // Get players who are currently not on the field (substitutes)
-  List<Player> get substitutes {
-    final onField = currentPositions.values.whereType<Player>().toList();
-    return roster.where((p) => !onField.contains(p)).toList();
-  }
-
-  // Get total play time for a player
-  Duration getPlayTime(Player player) {
-    return positionHistory
-        .where((pp) => pp.player.id == player.id)
-        .map((pp) => pp.duration)
-        .fold(Duration.zero, (prev, curr) => prev + curr);
-  }
-
-  // Get total bench time for a player
-  Duration getBenchTime(Player player) {
-    if (!roster.contains(player)) return Duration.zero;
-    if (status != GameStatus.inProgress) return Duration.zero;
-
-    final totalGameTime = DateTime.now().difference(startTime!);
-    final playTime = getPlayTime(player);
-    return totalGameTime - playTime;
-  }
-
   Map<String, dynamic> toMap() {
+    final Map<String, Map<String, dynamic>> lineup = {};
+    startingLineup.forEach((key, value) {
+      lineup[key] = value.toMap();
+    });
+
     return {
       'id': id,
-      'name': name,
-      'numberOfPeriods': numberOfPeriods,
-      'createdAt': createdAt.toIso8601String(),
-      'status': status.name,
-      'startTime': startTime?.toIso8601String(),
-      'endTime': endTime?.toIso8601String(),
+      'date': date.toIso8601String(),
+      'opponent': opponent,
+      'startingLineup': jsonEncode(lineup),
+      'substitutes': jsonEncode(substitutes.map((p) => p.toMap()).toList()),
     };
   }
 
-  @override
-  String toString() {
-    return 'Game(id: $id, name: $name, numberOfPeriods: $numberOfPeriods, createdAt: $createdAt, status: $status, roster: $roster)';
-  }
-
   factory Game.fromMap(Map<String, dynamic> map) {
+    // Parse lineup
+    final lineupJson = jsonDecode(map['startingLineup'] as String) as Map<String, dynamic>;
+    final Map<String, Player> lineup = {};
+    
+    lineupJson.forEach((key, value) {
+      lineup[key] = Player.fromMap(value as Map<String, dynamic>);
+    });
+
+    // Parse substitutes
+    final subsJson = jsonDecode(map['substitutes'] as String) as List<dynamic>;
+    final subs = subsJson
+      .map((item) => Player.fromMap(item as Map<String, dynamic>))
+      .toList();
+
     return Game(
-      id: map['id'] as int,
-      name: map['name'] as String,
-      numberOfPeriods: map['numberOfPeriods'] as int,
-      createdAt: DateTime.parse(map['createdAt'] as String),
-      status: GameStatus.values.firstWhere((e) => e.name == map['status']),
-      startTime:
-          map['startTime'] != null
-              ? DateTime.parse(map['startTime'] as String)
-              : null,
-      endTime:
-          map['endTime'] != null
-              ? DateTime.parse(map['endTime'] as String)
-              : null,
-      roster:
-          [], // Initialize with empty roster, should be populated separately
+      id: map['id'] as String,
+      date: DateTime.parse(map['date'] as String),
+      opponent: map['opponent'] as String,
+      startingLineup: lineup,
+      substitutes: subs,
     );
   }
 }

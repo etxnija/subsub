@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:subsub/views/roster/roster_screen.dart';
-import 'package:subsub/screens/game_screen.dart';
+import 'package:subsub/screens/games_screen.dart';
 import 'package:subsub/screens/field_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -21,7 +21,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.sports),
-                  label: 'Game',
+                  label: 'Games',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.sports_soccer),
@@ -35,7 +35,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     context.go('/');
                     break;
                   case 1:
-                    context.go('/game');
+                    context.go('/games');
                     break;
                   case 2:
                     context.go('/field');
@@ -51,8 +51,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const RosterScreen(),
           ),
           GoRoute(
-            path: '/game',
-            builder: (context, state) => const GameScreen(),
+            path: '/games',
+            builder: (context, state) => const GamesScreen(),
           ),
           GoRoute(
             path: '/field',
@@ -67,7 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 int _calculateSelectedIndex(GoRouterState state) {
   final location = state.uri.path;
   if (location == '/') return 0;
-  if (location == '/game') return 1;
+  if (location == '/games') return 1;
   if (location == '/field') return 2;
   return 0;
 } 
