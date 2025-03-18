@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../models/player.dart';
 import '../services/database_service.dart';
 
@@ -13,6 +14,7 @@ final rosterProvider = StateNotifierProvider<RosterNotifier, List<Player>>((
 
 class RosterNotifier extends StateNotifier<List<Player>> {
   final DatabaseService _database;
+  final _uuid = const Uuid();
 
   RosterNotifier(this._database) : super([]) {
     _loadPlayers();
@@ -23,9 +25,14 @@ class RosterNotifier extends StateNotifier<List<Player>> {
   }
 
   Future<void> addPlayer(String name, int number) async {
-    final player = Player(name: name, number: number);
-    final id = await _database.insertPlayer(player);
-    state = [...state, player.copyWith(id: id)];
+    final player = Player(
+      id: _uuid.v4(), // Generate UUID
+      name: name,
+      number: number
+    );
+    
+    await _database.insertPlayer(player);
+    state = [...state, player];
   }
 
   Future<void> updatePlayer(Player player) async {
@@ -36,7 +43,7 @@ class RosterNotifier extends StateNotifier<List<Player>> {
     ];
   }
 
-  Future<void> deletePlayer(int id) async {
+  Future<void> deletePlayer(String id) async {
     await _database.deletePlayer(id);
     state = state.where((p) => p.id != id).toList();
   }

@@ -20,30 +20,55 @@ class RosterScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: roster.length,
-        itemBuilder: (context, index) {
-          final player = roster[index];
-          return ListTile(
-            leading: CircleAvatar(child: Text(player.number.toString())),
-            title: Text(player.name),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _showEditPlayerDialog(context, ref, player),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed:
-                      () => _showDeleteConfirmation(context, ref, player),
-                ),
-              ],
+      body: roster.isEmpty 
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.people_outline,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Players Yet',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add players to your team',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: roster.length,
+              itemBuilder: (context, index) {
+                final player = roster[index];
+                return ListTile(
+                  leading: CircleAvatar(child: Text(player.number.toString())),
+                  title: Text(player.name),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => _showEditPlayerDialog(context, ref, player),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed:
+                            () => _showDeleteConfirmation(context, ref, player),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
 
@@ -172,7 +197,7 @@ class RosterScreen extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () {
-                  ref.read(rosterProvider.notifier).deletePlayer(player.id!);
+                  ref.read(rosterProvider.notifier).deletePlayer(player.id);
                   Navigator.pop(context);
                 },
                 style: TextButton.styleFrom(foregroundColor: Colors.red),

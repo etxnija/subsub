@@ -1,33 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:subsub/models/game.dart';
 import 'package:subsub/models/player.dart';
 import 'package:subsub/models/position.dart';
-import 'package:subsub/providers/lineup_provider.dart';
-import 'package:subsub/providers/roster_provider.dart';
+import 'package:subsub/providers/game_provider.dart';
 
-class FieldScreen extends ConsumerWidget {
-  const FieldScreen({super.key});
+class FieldScreen extends ConsumerStatefulWidget {
+  final Game? game;
+  final Function(Game)? onLineupComplete;
+
+  const FieldScreen({
+    super.key,
+    this.game,
+    this.onLineupComplete,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FieldScreen> createState() => _FieldScreenState();
+}
+
+class _FieldScreenState extends ConsumerState<FieldScreen> {
+  Game? _game;
+
+  @override
+  void initState() {
+    super.initState();
+    _game = widget.game;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('7v7 Formation (2-3-1)'),
+        title: Text(_game != null ? 'Select Starting Lineup' : '7v7 Formation (2-3-1)'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.clear_all),
-            onPressed: () {
-              ref.read(lineupProvider.notifier).clearAllAssignments();
-            },
-            tooltip: 'Clear All Assignments',
-          ),
+          if (_game != null)
+            TextButton(
+              onPressed: () {
+                // Only enable if we have exactly 7 players selected
+                final selectedCount = _game!.startingLineup.length;
+                if (selectedCount == 7) {
+                  // Update the game state in the provider before calling onLineupComplete
+                  ref.read(gamesProvider.notifier).updateGame(_game!);
+                  widget.onLineupComplete?.call(_game!);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please select exactly 7 players (currently $selectedCount selected)'),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Done'),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.clear_all),
+              onPressed: () {
+                // Clear all positions
+              },
+              tooltip: 'Clear All Assignments',
+            ),
         ],
       ),
-      body: _buildField(ref),
+      body: _buildField(context),
     );
   }
 
-  Widget _buildField(WidgetRef ref) {
+  Widget _buildField(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         const markerSize = 40.0;
@@ -47,7 +87,7 @@ class FieldScreen extends ConsumerWidget {
                 return Positioned(
                   left: (position.defaultLocation.dx * constraints.maxWidth) - (markerSize / 2),
                   top: (position.defaultLocation.dy * constraints.maxHeight) - (markerSize / 2),
-                  child: _buildPositionMarker(context, position, ref),
+                  child: _buildPositionMarker(context, position),
                 );
               }).toList(),
             ],
@@ -57,10 +97,9 @@ class FieldScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPositionMarker(BuildContext context, Position position, WidgetRef ref) {
+  Widget _buildPositionMarker(BuildContext context, Position position) {
     const markerSize = 40.0;
-    final lineup = ref.watch(lineupProvider);
-    final player = lineup[position.id];
+    final player = _game?.startingLineup[position.id];
 
     return Container(
       width: markerSize,
@@ -83,7 +122,7 @@ class FieldScreen extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _showPlayerSelection(context, ref, position),
+          onTap: () => _showPlayerSelection(context, position),
           borderRadius: BorderRadius.circular(markerSize / 2),
           child: Stack(
             children: [
@@ -127,10 +166,15 @@ class FieldScreen extends ConsumerWidget {
     );
   }
 
-  void _showPlayerSelection(BuildContext context, WidgetRef ref, Position position) {
-    final roster = ref.read(rosterProvider);
-    final lineup = ref.read(lineupProvider);
-    
+  void _showPlayerSelection(BuildContext context, Position position) {
+    if (_game == null) return;
+
+    final currentPlayer = _game!.startingLineup[position.id];
+    final availablePlayers = [
+      ..._game!.substitutes,
+      if (currentPlayer != null) currentPlayer,
+    ];
+
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -157,10 +201,22 @@ class FieldScreen extends ConsumerWidget {
                     ),
                   ),
                   const Spacer(),
-                  if (lineup[position.id] != null)
+                  if (currentPlayer != null)
                     TextButton.icon(
                       onPressed: () {
-                        ref.read(lineupProvider.notifier).removePlayer(position.id);
+                        final updatedLineup = Map<String, Player>.from(_game!.startingLineup)
+                          ..remove(position.id);
+                        final updatedSubs = List<Player>.from(_game!.substitutes)
+                          ..add(currentPlayer);
+                        
+                        // Update the state with the new lineup
+                        setState(() {
+                          _game = _game!.copyWith(
+                            startingLineup: updatedLineup,
+                            substitutes: updatedSubs,
+                          );
+                        });
+                        
                         Navigator.pop(context);
                       },
                       icon: const Icon(Icons.person_remove),
@@ -172,15 +228,16 @@ class FieldScreen extends ConsumerWidget {
             const Divider(),
             Expanded(
               child: ListView.builder(
-                itemCount: roster.length,
+                itemCount: availablePlayers.length,
                 itemBuilder: (context, index) {
-                  final player = roster[index];
-                  final isAssigned = lineup.values.any((p) => p?.id == player.id);
-                  final isSelectedForThisPosition = lineup[position.id]?.id == player.id;
+                  final player = availablePlayers[index];
+                  final isCurrentlySelected = currentPlayer?.id == player.id;
+                  final isAssignedElsewhere = !isCurrentlySelected && 
+                      _game!.startingLineup.values.any((p) => p.id == player.id);
 
                   return ListTile(
-                    enabled: !isAssigned || isSelectedForThisPosition,
-                    selected: isSelectedForThisPosition,
+                    enabled: !isAssignedElsewhere,
+                    selected: isCurrentlySelected,
                     leading: CircleAvatar(
                       backgroundColor: Colors.grey[300],
                       child: Text(
@@ -193,7 +250,24 @@ class FieldScreen extends ConsumerWidget {
                     ),
                     title: Text(player.name),
                     onTap: () {
-                      ref.read(lineupProvider.notifier).assignPlayer(position.id, player);
+                      if (isCurrentlySelected) return;
+                      
+                      final updatedLineup = Map<String, Player>.from(_game!.startingLineup)
+                        ..[position.id] = player;
+                      final updatedSubs = List<Player>.from(_game!.substitutes)
+                        ..remove(player);
+                      if (currentPlayer != null) {
+                        updatedSubs.add(currentPlayer);
+                      }
+                      
+                      // Update the state with the new lineup
+                      setState(() {
+                        _game = _game!.copyWith(
+                          startingLineup: updatedLineup,
+                          substitutes: updatedSubs,
+                        );
+                      });
+                      
                       Navigator.pop(context);
                     },
                   );

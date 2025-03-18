@@ -1,11 +1,11 @@
 class Player {
-  final int? id; // null when not yet saved to database
+  final String id; // Unique identifier
   final String name;
   final int number;
 
-  const Player({this.id, required this.name, required this.number});
+  const Player({required this.id, required this.name, required this.number});
 
-  Player copyWith({int? id, String? name, int? number}) {
+  Player copyWith({String? id, String? name, int? number}) {
     return Player(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -19,7 +19,7 @@ class Player {
 
   factory Player.fromMap(Map<String, dynamic> map) {
     return Player(
-      id: map['id'] as int,
+      id: map['id'] as String,
       name: map['name'] as String,
       number: map['number'] as int,
     );
