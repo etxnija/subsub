@@ -4,6 +4,7 @@ import 'package:subsub/models/game.dart';
 import 'package:subsub/models/player.dart';
 import 'package:subsub/models/position.dart';
 import 'package:subsub/providers/game_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:async';
 import 'dart:ui';
 
@@ -123,8 +124,30 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _isPeriodActive = false;
       if (!isLastPeriod) {
         _activePeriod++;
+      } else {
+        _showGameCompletedDialog();
       }
     });
+  }
+  
+  Future<void> _showGameCompletedDialog() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Game Completed'),
+        content: const Text('The game has ended. You can view the game summary in the Games list.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              context.pop(); // Close dialog
+              context.go('/games'); // Navigate back to games list
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
   
   void _startTimer() {
@@ -209,7 +232,21 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       appBar: AppBar(
         title: Text('vs. ${_game!.opponent}'),
         actions: [
-          if (_isPeriodActive)
+          if (_game!.status == GameStatus.completed)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              alignment: Alignment.center,
+              child: const Text(
+                'GAME COMPLETED',
+                style: TextStyle(color: Colors.green),
+              ),
+            )
+          else if (_isPeriodActive)
             IconButton(
               onPressed: _pausePeriod,
               icon: const Icon(Icons.pause),
