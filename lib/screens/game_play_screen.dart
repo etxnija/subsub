@@ -34,6 +34,12 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadGame();
     });
+    // Update player times every second
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted && _isPeriodActive) {
+        setState(() {});
+      }
+    });
   }
   
   Future<void> _loadGame() async {
@@ -496,22 +502,30 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             '#${player.number}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 11,
                             ),
                           ),
                           Text(
                             player.name.split(' ').last,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
+                              fontSize: 9,
                             ),
                             overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            '${_game!.getMinutesOnBench(player.id)}m',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 9,
+                            ),
                           ),
                         ],
                       ),
@@ -577,6 +591,13 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
+                Text(
+                  '${_game!.getMinutesOnBench(player.id)}m',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                  ),
+                ),
               ],
             ),
           ),
@@ -633,6 +654,13 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
+                    Text(
+                      '${_game!.getMinutesOnBench(player.id)}m',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -656,6 +684,13 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                       fontSize: 10,
                     ),
                     overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '${_game!.getMinutesPlayed(player.id)}m',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                    ),
                   ),
                 ],
               ),
