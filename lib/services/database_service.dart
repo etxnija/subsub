@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import '../models/player.dart';
 import '../models/game.dart';
+import '../models/player_time.dart';
 
 final databaseServiceProvider = Provider<DatabaseService>(
   (ref) => DatabaseService(),
@@ -14,7 +15,7 @@ final databaseServiceProvider = Provider<DatabaseService>(
 class DatabaseService {
   static Database? _database;
   static const String databaseName = 'subsub.db';
-  static const int _databaseVersion = 5; // Increase version to add periods
+  static const int _databaseVersion = 6; // Increase version to add periods
 
   Future<Database> get database async {
     _database ??= await _initDatabase();
@@ -46,54 +47,107 @@ class DatabaseService {
       path, 
       version: _databaseVersion, 
       onCreate: _createDatabase,
-      onUpgrade: _upgradeDatabase,
+      onUpgrade: _onUpgrade,
     );
   }
 
-  Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
-    // For simplicity, just drop and recreate all tables
-    await db.execute('DROP TABLE IF EXISTS games');
-    await db.execute('DROP TABLE IF EXISTS players');
-    await db.execute('DROP TABLE IF EXISTS game_roster');
-    await db.execute('DROP TABLE IF EXISTS position_history');
-    await db.execute('DROP TABLE IF EXISTS game_lineup');
-    
-    // Recreate tables
-    await _createDatabase(db, newVersion);
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS game_lineup (
+          game_id TEXT NOT NULL,
+          position_id TEXT NOT NULL,
+          player_id TEXT NOT NULL,
+          FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE,
+          PRIMARY KEY (game_id, position_id)
+        )
+      ''');
+    }
+
+    if (oldVersion < 3) {
+      await db.execute('''
+        ALTER TABLE games ADD COLUMN time_tracking TEXT DEFAULT '{}'
+      ''');
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS game_periods (
+          game_id TEXT NOT NULL,
+          period_number INTEGER NOT NULL,
+          start_time TEXT,
+          end_time TEXT,
+          FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE,
+          PRIMARY KEY (game_id, period_number)
+        )
+      ''');
+    }
+
+    if (oldVersion < 5) {
+      await db.execute('''
+        ALTER TABLE games ADD COLUMN status TEXT DEFAULT 'scheduled'
+      ''');
+    }
+
+    if (oldVersion < 6) {
+      // Update the games table to use proper JSON for time tracking
+      await db.execute('''
+        ALTER TABLE games ADD COLUMN time_tracking_json TEXT DEFAULT '{}'
+      ''');
+      
+      // Migrate existing time tracking data
+      final games = await db.query('games');
+      for (final game in games) {
+        final timeTracking = game['time_tracking'] as String? ?? '{}';
+        await db.update(
+          'games',
+          {'time_tracking_json': timeTracking},
+          where: 'id = ?',
+          whereArgs: [game['id']],
+        );
+      }
+      
+      // Drop the old column
+      await db.execute('''
+        ALTER TABLE games DROP COLUMN time_tracking
+      ''');
+      
+      // Rename the new column
+      await db.execute('''
+        ALTER TABLE games RENAME COLUMN time_tracking_json TO time_tracking
+      ''');
+    }
   }
 
   Future<void> _createDatabase(Database db, int version) async {
-    // Players table with STRING ID
     await db.execute('''
-      CREATE TABLE players(
+      CREATE TABLE IF NOT EXISTS players (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         number INTEGER NOT NULL
       )
     ''');
 
-    // Games table with STRING ID
     await db.execute('''
-      CREATE TABLE games(
+      CREATE TABLE IF NOT EXISTS games (
         id TEXT PRIMARY KEY,
         date TEXT NOT NULL,
         opponent TEXT NOT NULL,
-        startingLineup TEXT NOT NULL,
-        substitutes TEXT NOT NULL,
+        startingLineup TEXT NOT NULL DEFAULT '{}',
+        substitutes TEXT NOT NULL DEFAULT '[]',
         periods TEXT NOT NULL DEFAULT '[]',
-        status INTEGER NOT NULL DEFAULT 0
+        status TEXT NOT NULL DEFAULT 'setup',
+        timeTracking TEXT NOT NULL DEFAULT '{}'
       )
     ''');
-    
-    // Game lineup table for player position assignments
+
     await db.execute('''
-      CREATE TABLE game_lineup(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+      CREATE TABLE IF NOT EXISTS game_lineup (
         game_id TEXT NOT NULL,
-        position_id TEXT,
+        position_id TEXT NOT NULL,
         player_id TEXT NOT NULL,
-        is_substitute INTEGER NOT NULL DEFAULT 0,
-        FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE
+        FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE,
+        PRIMARY KEY (game_id, position_id)
       )
     ''');
 
@@ -198,42 +252,45 @@ class DatabaseService {
     await delete('players', 'id = ?', [id]);
   }
 
-  Future<String> insertGame(Game game) async {
+  Future<void> insertGame(Game game) async {
     final db = await database;
-    final uuid = const Uuid().v4();
-    final gameMap = game.toMap()..['id'] = uuid;
-    
     await db.transaction((txn) async {
-      // Insert the game record
-      await txn.insert('games', gameMap);
+      // Convert complex types to JSON strings
+      final lineupJson = jsonEncode(game.startingLineup.map(
+        (key, value) => MapEntry(key, value.toMap()),
+      ));
       
+      final substitutesJson = jsonEncode(game.substitutes.map((p) => p.toMap()).toList());
+      final periodsJson = jsonEncode(game.periods.map((p) => p.toMap()).toList());
+      final timeTrackingJson = jsonEncode(game.timeTracking.toMap());
+
+      await txn.insert(
+        'games',
+        {
+          'id': game.id,
+          'date': game.date.toIso8601String(),
+          'opponent': game.opponent,
+          'startingLineup': lineupJson,
+          'substitutes': substitutesJson,
+          'periods': periodsJson,
+          'status': game.status.toString(),
+          'timeTracking': timeTrackingJson,
+        },
+      );
+
       // Insert lineup entries
       for (final entry in game.startingLineup.entries) {
         await txn.insert(
           'game_lineup',
           {
-            'game_id': uuid,
+            'game_id': game.id,
             'position_id': entry.key,
             'player_id': entry.value.id,
-            'is_substitute': 0,
           },
-        );
-      }
-      
-      // Insert substitute entries
-      for (final player in game.substitutes) {
-        await txn.insert(
-          'game_lineup',
-          {
-            'game_id': uuid,
-            'player_id': player.id,
-            'is_substitute': 1,
-          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
     });
-    
-    return uuid;
   }
   
   Future<void> deleteGame(String id) async {
@@ -258,22 +315,32 @@ class DatabaseService {
   Future<void> updateGame(Game game) async {
     final db = await database;
     await db.transaction((txn) async {
-      // Update the game record
+      // Convert complex types to JSON strings
+      final lineupJson = jsonEncode(game.startingLineup.map(
+        (key, value) => MapEntry(key, value.toMap()),
+      ));
+      
+      final substitutesJson = jsonEncode(game.substitutes.map((p) => p.toMap()).toList());
+      final periodsJson = jsonEncode(game.periods.map((p) => p.toMap()).toList());
+      final timeTrackingJson = jsonEncode(game.timeTracking.toMap());
+
       await txn.update(
         'games',
-        game.toMap(),
+        {
+          'date': game.date.toIso8601String(),
+          'opponent': game.opponent,
+          'startingLineup': lineupJson,
+          'substitutes': substitutesJson,
+          'periods': periodsJson,
+          'status': game.status.toString(),
+          'timeTracking': timeTrackingJson,
+        },
         where: 'id = ?',
         whereArgs: [game.id],
       );
 
-      // Delete existing lineup entries
-      await txn.delete(
-        'game_lineup',
-        where: 'game_id = ?',
-        whereArgs: [game.id],
-      );
-
-      // Insert new lineup entries
+      // Update game lineup
+      await txn.delete('game_lineup', where: 'game_id = ?', whereArgs: [game.id]);
       for (final entry in game.startingLineup.entries) {
         await txn.insert(
           'game_lineup',
@@ -281,90 +348,120 @@ class DatabaseService {
             'game_id': game.id,
             'position_id': entry.key,
             'player_id': entry.value.id,
-            'is_substitute': 0,
           },
-        );
-      }
-
-      // Insert substitute entries
-      for (final player in game.substitutes) {
-        await txn.insert(
-          'game_lineup',
-          {
-            'game_id': game.id,
-            'player_id': player.id,
-            'is_substitute': 1,
-          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
         );
       }
     });
   }
 
+  Future<Game?> getGame(String id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'games',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isEmpty) return null;
+
+    final map = maps.first;
+    
+    // Parse JSON strings back to complex types
+    final lineupJson = jsonDecode(map['startingLineup'] as String) as Map<String, dynamic>;
+    final lineup = lineupJson.map(
+      (key, value) => MapEntry(key, Player.fromMap(value as Map<String, dynamic>)),
+    );
+
+    final substitutesJson = jsonDecode(map['substitutes'] as String) as List<dynamic>;
+    final substitutes = substitutesJson
+        .map((item) => Player.fromMap(item as Map<String, dynamic>))
+        .toList();
+
+    final periodsJson = jsonDecode(map['periods'] as String) as List<dynamic>;
+    final periods = periodsJson
+        .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
+        .toList();
+
+    final timeTrackingJson = jsonDecode(map['timeTracking'] as String) as Map<String, dynamic>;
+    final timeTracking = GameTimeTracking.fromMap(timeTrackingJson);
+
+    return Game(
+      id: map['id'] as String,
+      date: DateTime.parse(map['date'] as String),
+      opponent: map['opponent'] as String,
+      startingLineup: lineup,
+      substitutes: substitutes,
+      periods: periods,
+      status: GameStatus.values.firstWhere(
+        (e) => e.toString() == map['status'],
+        orElse: () => GameStatus.setup,
+      ),
+      timeTracking: timeTracking,
+    );
+  }
+
   Future<List<Game>> getGames() async {
     final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('games');
     
-    // Get all games
-    final List<Map<String, dynamic>> games = await db.query('games');
-    
-    // For each game, get the lineup
-    final List<Game> result = [];
-    for (final gameMap in games) {
-      final gameId = gameMap['id'] as String;
-      
-      // Get starting lineup
-      final startingLineup = await db.query(
-        'game_lineup',
-        where: 'game_id = ? AND is_substitute = 0',
-        whereArgs: [gameId],
-      );
-      
-      // Get substitutes
-      final substitutes = await db.query(
-        'game_lineup',
-        where: 'game_id = ? AND is_substitute = 1',
-        whereArgs: [gameId],
-      );
-      
-      // Get player details for each entry
-      final Map<String, Player> lineup = {};
-      for (final entry in startingLineup) {
-        final positionId = entry['position_id'] as String;
-        final playerId = entry['player_id'] as String;
-        
-        final playerData = await db.query(
-          'players',
-          where: 'id = ?',
-          whereArgs: [playerId],
+    return maps.map((map) {
+      try {
+        // Parse JSON strings back to complex types with null safety
+        final lineupJson = map['startingLineup'] != null 
+            ? jsonDecode(map['startingLineup'] as String) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final lineup = lineupJson.map(
+          (key, value) => MapEntry(key, Player.fromMap(value as Map<String, dynamic>)),
         );
-        
-        if (playerData.isNotEmpty) {
-          lineup[positionId] = Player.fromMap(playerData.first);
-        }
-      }
-      
-      final List<Player> subs = [];
-      for (final entry in substitutes) {
-        final playerId = entry['player_id'] as String;
-        
-        final playerData = await db.query(
-          'players',
-          where: 'id = ?',
-          whereArgs: [playerId],
+
+        final substitutesJson = map['substitutes'] != null
+            ? jsonDecode(map['substitutes'] as String) as List<dynamic>
+            : <dynamic>[];
+        final substitutes = substitutesJson
+            .map((item) => Player.fromMap(item as Map<String, dynamic>))
+            .toList();
+
+        final periodsJson = map['periods'] != null
+            ? jsonDecode(map['periods'] as String) as List<dynamic>
+            : <dynamic>[];
+        final periods = periodsJson
+            .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
+            .toList();
+
+        final timeTrackingJson = map['timeTracking'] != null
+            ? jsonDecode(map['timeTracking'] as String) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final timeTracking = GameTimeTracking.fromMap(timeTrackingJson);
+
+        return Game(
+          id: map['id'] as String,
+          date: DateTime.parse(map['date'] as String),
+          opponent: map['opponent'] as String,
+          startingLineup: lineup,
+          substitutes: substitutes,
+          periods: periods,
+          status: GameStatus.values.firstWhere(
+            (e) => e.toString() == map['status'],
+            orElse: () => GameStatus.setup,
+          ),
+          timeTracking: timeTracking,
         );
-        
-        if (playerData.isNotEmpty) {
-          subs.add(Player.fromMap(playerData.first));
-        }
+      } catch (e) {
+        print('Error parsing game data: $e');
+        print('Raw data: ${map['startingLineup']}');
+        // Return a default game object with empty data
+        return Game(
+          id: map['id'] as String,
+          date: DateTime.parse(map['date'] as String),
+          opponent: map['opponent'] as String,
+          startingLineup: {},
+          substitutes: [],
+          periods: [],
+          status: GameStatus.setup,
+          timeTracking: GameTimeTracking(),
+        );
       }
-      
-      // Create the Game object
-      result.add(Game.fromMap({
-        ...gameMap,
-        'startingLineup': jsonEncode(lineup.map((key, value) => MapEntry(key, value.toMap()))),
-        'substitutes': jsonEncode(subs.map((p) => p.toMap()).toList()),
-      }));
-    }
-    
-    return result;
+    }).toList();
   }
 }

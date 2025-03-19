@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:subsub/models/game.dart';
 import 'package:subsub/services/database_service.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter/foundation.dart';
 
 // Provider for the list of games
 final gamesProvider = StateNotifierProvider<GamesNotifier, List<Game>>((ref) {
@@ -31,9 +32,13 @@ class GamesNotifier extends StateNotifier<List<Game>> {
 
   // Add a new game
   Future<void> addGame(Game game) async {
-    final id = await _databaseService.insertGame(game);
-    final newGame = game.copyWith(id: id);
-    state = [...state, newGame];
+    try {
+      await _databaseService.insertGame(game);
+      await loadGames();
+    } catch (e) {
+      debugPrint('Error adding game: $e');
+      rethrow;
+    }
   }
 
   // Update an existing game
