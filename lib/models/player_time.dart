@@ -19,6 +19,19 @@ class PlayerTimeRecord {
     return end.difference(startTime).inMinutes;
   }
 
+  int get durationSeconds {
+    final end = endTime ?? DateTime.now();
+    return end.difference(startTime).inSeconds;
+  }
+
+  String get formattedDuration {
+    final seconds = durationSeconds;
+    if (seconds < 60) {
+      return '${seconds}s';
+    }
+    return '${seconds ~/ 60}m';
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'playerId': playerId,
@@ -48,6 +61,27 @@ class GameTimeTracking {
   int getMinutesPlayed(String playerId) {
     final records = playerRecords[playerId] ?? [];
     return records.fold(0, (sum, record) => sum + record.durationMinutes);
+  }
+
+  String getFormattedTime(String playerId) {
+    final records = playerRecords[playerId] ?? [];
+    if (records.isEmpty) return '0s';
+    final totalSeconds = records.fold(0, (sum, record) => sum + record.durationSeconds);
+    if (totalSeconds < 60) {
+      return '${totalSeconds}s';
+    }
+    return '${totalSeconds ~/ 60}m';
+  }
+
+  String getFormattedBenchTime(String playerId) {
+    final records = playerRecords[playerId] ?? [];
+    final benchRecords = records.where((record) => record.positionId == null);
+    if (benchRecords.isEmpty) return '0s';
+    final totalSeconds = benchRecords.fold(0, (sum, record) => sum + record.durationSeconds);
+    if (totalSeconds < 60) {
+      return '${totalSeconds}s';
+    }
+    return '${totalSeconds ~/ 60}m';
   }
 
   int getMinutesInPosition(String playerId, String positionId) {
