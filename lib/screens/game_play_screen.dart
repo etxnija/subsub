@@ -490,7 +490,33 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
               ),
             ),
             child: player != null
-                ? _buildPlayerDraggable(player, position)
+                ? Container(
+                    width: 50,
+                    height: 50,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '#${player.number}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            player.name.split(' ').last,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
                 : Center(
                     child: Text(
                       position.abbreviation,
