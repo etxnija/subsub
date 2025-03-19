@@ -67,6 +67,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       status: GameStatus.inProgress,
     );
     
+    // Start tracking time for all players in the starting lineup
+    updatedGame.startingLineup.values.forEach((player) {
+      updatedGame.recordPlayerStart(player.id);
+    });
+    
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
     
     setState(() {
@@ -83,18 +88,20 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     
     if (_game == null || _activePeriod >= _game!.periods.length) return;
     
-    setState(() {
-      _isPeriodActive = false;
-    });
-    
     final updatedGame = _game!.copyWith(
       status: GameStatus.paused,
     );
+    
+    // End tracking for all players on the field
+    updatedGame.startingLineup.values.forEach((player) {
+      updatedGame.recordPlayerEnd(player.id);
+    });
     
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
     
     setState(() {
       _game = updatedGame;
+      _isPeriodActive = false;
     });
   }
   
@@ -116,6 +123,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       periods: updatedPeriods,
       status: isLastPeriod ? GameStatus.completed : GameStatus.setup,
     );
+    
+    // End tracking for all players on the field
+    updatedGame.startingLineup.values.forEach((player) {
+      updatedGame.recordPlayerEnd(player.id);
+    });
     
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
     
@@ -183,7 +195,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         newLineup[oldPositionId!] = currentPlayer;
       } else {
         // Remove player from old position without replacement
-        newLineup.remove(oldPositionId);
+        newLineup.remove(oldPositionId!);
       }
     } else {
       // Player is coming from substitutes
@@ -204,8 +216,22 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       substitutes: newSubstitutes,
     );
     
-    ref.read(gamesProvider.notifier).updateGame(updatedGame);
+    // Update time tracking if the period is active
+    if (_isPeriodActive) {
+      if (oldPositionId == null) {
+        // Player is coming from substitutes - start tracking
+        updatedGame.recordPlayerStart(player.id);
+        
+        if (currentPlayer != null) {
+          // Current player becomes a substitute - end tracking
+          updatedGame.recordPlayerEnd(currentPlayer.id);
+        }
+      }
+      // No need to update time tracking for position swaps since both players stay on field
+    }
     
+    ref.read(gamesProvider.notifier).updateGame(updatedGame);
+
     setState(() {
       _game = updatedGame;
     });
@@ -445,7 +471,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       child: DragTarget<Player>(
         onWillAccept: (incomingPlayer) => true,
         onAccept: (incomingPlayer) {
-          _handlePlayerSwap(position.id, incomingPlayer);
+          if (incomingPlayer != null) {
+            _handlePlayerSwap(position.id, incomingPlayer);
+          }
         },
         builder: (context, candidateItems, rejectedItems) {
           return Container(
@@ -465,7 +493,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 ? _buildPlayerDraggable(player, position)
                 : Center(
                     child: Text(
-                      position.name,
+                      position.abbreviation,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

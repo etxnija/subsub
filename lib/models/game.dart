@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'player.dart';
 import 'position.dart';
+import 'player_time.dart';
 
 enum GameStatus { setup, inProgress, paused, completed }
 
@@ -77,20 +78,22 @@ class Game {
   final String id;
   final DateTime date;
   final String opponent;
-  final Map<String, Player> startingLineup; // Position ID -> Player
+  final Map<String, Player> startingLineup;
   final List<Player> substitutes;
   final List<GamePeriod> periods;
   final GameStatus status;
+  final GameTimeTracking timeTracking;
 
-  const Game({
+  Game({
     required this.id,
     required this.date,
     required this.opponent,
     required this.startingLineup,
     required this.substitutes,
-    this.periods = const [],
+    required this.periods,
     this.status = GameStatus.setup,
-  });
+    GameTimeTracking? timeTracking,
+  }) : timeTracking = timeTracking ?? GameTimeTracking();
 
   Game copyWith({
     String? id,
@@ -100,6 +103,7 @@ class Game {
     List<Player>? substitutes,
     List<GamePeriod>? periods,
     GameStatus? status,
+    GameTimeTracking? timeTracking,
   }) {
     return Game(
       id: id ?? this.id,
@@ -109,58 +113,69 @@ class Game {
       substitutes: substitutes ?? this.substitutes,
       periods: periods ?? this.periods,
       status: status ?? this.status,
+      timeTracking: timeTracking ?? this.timeTracking,
     );
   }
 
   Map<String, dynamic> toMap() {
-    final Map<String, Map<String, dynamic>> lineup = {};
-    startingLineup.forEach((key, value) {
-      lineup[key] = value.toMap();
-    });
-
     return {
       'id': id,
       'date': date.toIso8601String(),
       'opponent': opponent,
-      'startingLineup': jsonEncode(lineup),
-      'substitutes': jsonEncode(substitutes.map((p) => p.toMap()).toList()),
-      'periods': jsonEncode(periods.map((p) => p.toMap()).toList()),
-      'status': status.index,
+      'startingLineup': startingLineup.map(
+        (key, value) => MapEntry(key, value.toMap()),
+      ),
+      'substitutes': substitutes.map((player) => player.toMap()).toList(),
+      'periods': periods.map((period) => period.toMap()).toList(),
+      'status': status.toString(),
+      'timeTracking': timeTracking.toMap(),
     };
   }
 
   factory Game.fromMap(Map<String, dynamic> map) {
-    // Parse lineup
-    final lineupJson = jsonDecode(map['startingLineup'] as String) as Map<String, dynamic>;
-    final Map<String, Player> lineup = {};
+    // Parse JSON strings for complex types
+    final lineupJson = map['startingLineup'] is String 
+        ? jsonDecode(map['startingLineup'] as String) as Map<String, dynamic>
+        : map['startingLineup'] as Map<String, dynamic>;
     
-    lineupJson.forEach((key, value) {
-      lineup[key] = Player.fromMap(value as Map<String, dynamic>);
-    });
+    final lineup = lineupJson.map(
+      (key, value) => MapEntry(key, Player.fromMap(value as Map<String, dynamic>)),
+    );
 
-    // Parse substitutes
-    final subsJson = jsonDecode(map['substitutes'] as String) as List<dynamic>;
-    final subs = subsJson
-      .map((item) => Player.fromMap(item as Map<String, dynamic>))
-      .toList();
+    final substitutesJson = map['substitutes'] is String
+        ? jsonDecode(map['substitutes'] as String) as List<dynamic>
+        : map['substitutes'] as List<dynamic>;
+    
+    final substitutes = substitutesJson
+        .map((item) => Player.fromMap(item as Map<String, dynamic>))
+        .toList();
 
-    // Parse periods
-    List<GamePeriod> periods = [];
-    if (map['periods'] != null) {
-      final periodsJson = jsonDecode(map['periods'] as String) as List<dynamic>;
-      periods = periodsJson
+    final periodsJson = map['periods'] is String
+        ? jsonDecode(map['periods'] as String) as List<dynamic>
+        : map['periods'] as List<dynamic>;
+    
+    final periods = periodsJson
         .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
         .toList();
-    }
+
+    final timeTrackingJson = map['timeTracking'] is String
+        ? jsonDecode(map['timeTracking'] as String) as Map<String, dynamic>
+        : map['timeTracking'] as Map<String, dynamic>;
+    
+    final timeTracking = GameTimeTracking.fromMap(timeTrackingJson);
 
     return Game(
       id: map['id'] as String,
       date: DateTime.parse(map['date'] as String),
       opponent: map['opponent'] as String,
       startingLineup: lineup,
-      substitutes: subs,
+      substitutes: substitutes,
       periods: periods,
-      status: GameStatus.values[map['status'] as int? ?? 0],
+      status: GameStatus.values.firstWhere(
+        (e) => e.toString() == map['status'],
+        orElse: () => GameStatus.setup,
+      ),
+      timeTracking: timeTracking,
     );
   }
 
@@ -173,5 +188,32 @@ class Game {
         durationMinutes: durationMinutes,
       ),
     );
+  }
+
+  // Helper methods for time tracking
+  void recordPlayerStart(String playerId, {String? positionId}) {
+    timeTracking.addRecord(
+      PlayerTimeRecord(
+        playerId: playerId,
+        positionId: positionId,
+        startTime: DateTime.now(),
+      ),
+    );
+  }
+
+  void recordPlayerEnd(String playerId) {
+    timeTracking.endCurrentRecord(playerId);
+  }
+
+  int getMinutesPlayed(String playerId) {
+    return timeTracking.getMinutesPlayed(playerId);
+  }
+
+  int getMinutesInPosition(String playerId, String positionId) {
+    return timeTracking.getMinutesInPosition(playerId, positionId);
+  }
+
+  int getMinutesOnBench(String playerId) {
+    return timeTracking.getMinutesOnBench(playerId);
   }
 }
