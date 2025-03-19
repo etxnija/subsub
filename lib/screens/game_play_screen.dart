@@ -521,7 +521,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            '${_game!.getMinutesOnBench(player.id)}m',
+                            '${_game!.timeTracking.getFormattedBenchTime(player.id)}',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 9,
@@ -592,7 +592,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  '${_game!.getMinutesOnBench(player.id)}m',
+                  '${_game!.timeTracking.getFormattedBenchTime(player.id)}',
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 10,
@@ -655,7 +655,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      '${_game!.getMinutesOnBench(player.id)}m',
+                      '${_game!.timeTracking.getFormattedBenchTime(player.id)}',
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 10,
@@ -686,7 +686,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    '${_game!.getMinutesPlayed(player.id)}m',
+                    '${_game!.timeTracking.getFormattedBenchTime(player.id)}',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 10,
