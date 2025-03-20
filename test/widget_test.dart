@@ -87,7 +87,7 @@ void main() {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
-  testWidgets('App should render roster screen', (WidgetTester tester) async {
+  testWidgets('App should render games screen', (WidgetTester tester) async {
     final container = ProviderContainer(
       overrides: [
         databaseServiceProvider.overrideWithValue(MockDatabaseService()),
@@ -99,8 +99,11 @@ void main() {
       UncontrolledProviderScope(container: container, child: const App()),
     );
 
-    // Verify that we have the roster screen title
-    expect(find.text('Team Roster'), findsOneWidget);
+    // Verify that we have the games screen title in the AppBar
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Games')),
+      findsOneWidget,
+    );
 
     // Verify that we have an add button
     expect(find.byIcon(Icons.add), findsOneWidget);
