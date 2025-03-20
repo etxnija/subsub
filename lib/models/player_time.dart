@@ -80,8 +80,9 @@ class GameTimeTracking {
 
   String getFormattedTime(String playerId) {
     final records = playerRecords[playerId] ?? [];
-    if (records.isEmpty) return '0s';
-    final totalSeconds = records.fold(0, (sum, record) => sum + record.durationSeconds);
+    final playRecords = records.where((record) => record.positionId != null);
+    if (playRecords.isEmpty) return '0s';
+    final totalSeconds = playRecords.fold(0, (sum, record) => sum + record.durationSeconds);
     if (totalSeconds < 60) {
       return '${totalSeconds}s';
     }
