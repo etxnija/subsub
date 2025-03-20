@@ -164,22 +164,26 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Game Completed'),
-            content: const Text(
-              'The game has ended. You can view the game summary in the Games list.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  context.pop(); // Close dialog
-                  context.go('/games'); // Navigate back to games list
-                },
-                child: const Text('OK'),
-              ),
-            ],
+      builder: (dialogContext) => WillPopScope(
+        onWillPop: () async => false,
+        child: AlertDialog(
+          title: const Text('Game Completed'),
+          content: const Text(
+            'The game has ended. You can view the game summary in the Games list.',
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // First dismiss the dialog
+                Navigator.of(dialogContext).pop();
+                // Then navigate to games list
+                context.go('/games');
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
