@@ -17,7 +17,7 @@ class SubstitutionManager {
     // Find the position IDs for both players
     String? positionId1;
     String? positionId2;
-    
+
     for (final entry in game.startingLineup.entries) {
       if (entry.value.id == player1.id) {
         positionId1 = entry.key;
@@ -37,12 +37,10 @@ class SubstitutionManager {
     }
 
     // Update the game with the new lineup
-    final updatedGame = game.copyWith(
-      startingLineup: newLineup,
-    );
-    
+    final updatedGame = game.copyWith(startingLineup: newLineup);
+
     onGameUpdated(updatedGame);
-    
+
     // Update time tracking for the swapped players
     timeTracking.swapPlayers(player1, player2);
   }
@@ -70,9 +68,9 @@ class SubstitutionManager {
         startingLineup: newLineup,
         substitutes: newSubstitutes,
       );
-      
+
       onGameUpdated(updatedGame);
-      
+
       // Update time tracking
       timeTracking.endCurrentTime(player.id);
       timeTracking.startBenchTime(player.id);
@@ -93,11 +91,11 @@ class SubstitutionManager {
       startingLineup: newLineup,
       substitutes: newSubstitutes,
     );
-    
+
     onGameUpdated(updatedGame);
-    
+
     // Update time tracking
     timeTracking.endCurrentTime(player.id);
     timeTracking.startPlayTime(player.id, positionId);
   }
-} 
+}

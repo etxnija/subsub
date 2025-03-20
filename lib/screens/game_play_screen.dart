@@ -10,11 +10,8 @@ import 'dart:ui';
 
 class GamePlayScreen extends ConsumerStatefulWidget {
   final String gameId;
-  
-  const GamePlayScreen({
-    Key? key,
-    required this.gameId,
-  }) : super(key: key);
+
+  const GamePlayScreen({Key? key, required this.gameId}) : super(key: key);
 
   @override
   ConsumerState<GamePlayScreen> createState() => _GamePlayScreenState();
@@ -28,7 +25,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   int _activePeriod = 0;
   bool _isPeriodActive = false;
   bool _isDragging = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -42,26 +39,26 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       }
     });
   }
-  
+
   Future<void> _loadGame() async {
     final games = ref.read(gamesProvider);
     final game = games.firstWhere((g) => g.id == widget.gameId);
-    
+
     setState(() {
       _game = game;
     });
   }
-  
+
   @override
   void dispose() {
     _gameTimer?.cancel();
     _updateTimer?.cancel();
     super.dispose();
   }
-  
+
   void _startPeriod() {
     if (_game == null || _activePeriod >= _game!.periods.length) return;
-    
+
     final updatedPeriods = List<GamePeriod>.from(_game!.periods);
     updatedPeriods[_activePeriod] = GamePeriod(
       number: updatedPeriods[_activePeriod].number,
@@ -69,65 +66,63 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       startTime: DateTime.now(),
       endTime: null,
     );
-    
+
     final updatedGame = _game!.copyWith(
       periods: updatedPeriods,
       status: GameStatus.inProgress,
     );
-    
+
     // Start play time for players in the starting lineup
     updatedGame.startingLineup.forEach((positionId, player) {
       updatedGame.timeTrackingManager.startPlayTime(player.id, positionId);
     });
-    
+
     // Start bench time for players in the substitutes list
     updatedGame.substitutes.forEach((player) {
       updatedGame.timeTrackingManager.startBenchTime(player.id);
     });
-    
+
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
-    
+
     setState(() {
       _game = updatedGame;
       _isPeriodActive = true;
       _activeSeconds = 0;
     });
-    
+
     _startTimer();
   }
-  
+
   void _pausePeriod() {
     _gameTimer?.cancel();
-    
+
     if (_game == null || _activePeriod >= _game!.periods.length) return;
-    
-    final updatedGame = _game!.copyWith(
-      status: GameStatus.paused,
-    );
-    
+
+    final updatedGame = _game!.copyWith(status: GameStatus.paused);
+
     // End tracking for all players on the field
     updatedGame.startingLineup.values.forEach((player) {
       updatedGame.timeTrackingManager.endCurrentTime(player.id);
     });
-    
+
     // End bench time tracking for all substitutes
     updatedGame.substitutes.forEach((player) {
       updatedGame.timeTrackingManager.endCurrentTime(player.id);
     });
-    
+
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
-    
+
     setState(() {
       _game = updatedGame;
       _isPeriodActive = false;
     });
   }
-  
+
   void _endPeriod() {
     _gameTimer?.cancel();
-    
+
     if (_game == null || _activePeriod >= _game!.periods.length) return;
-    
+
     final updatedPeriods = List<GamePeriod>.from(_game!.periods);
     updatedPeriods[_activePeriod] = GamePeriod(
       number: updatedPeriods[_activePeriod].number,
@@ -135,25 +130,25 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       startTime: updatedPeriods[_activePeriod].startTime,
       endTime: DateTime.now(),
     );
-    
+
     final isLastPeriod = _activePeriod == _game!.periods.length - 1;
     final updatedGame = _game!.copyWith(
       periods: updatedPeriods,
       status: isLastPeriod ? GameStatus.completed : GameStatus.setup,
     );
-    
+
     // End tracking for all players on the field
     updatedGame.startingLineup.values.forEach((player) {
       updatedGame.timeTrackingManager.endCurrentTime(player.id);
     });
-    
+
     // End bench time tracking for all substitutes
     updatedGame.substitutes.forEach((player) {
       updatedGame.timeTrackingManager.endCurrentTime(player.id);
     });
-    
+
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
-    
+
     setState(() {
       _game = updatedGame;
       _isPeriodActive = false;
@@ -164,27 +159,30 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       }
     });
   }
-  
+
   Future<void> _showGameCompletedDialog() async {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Game Completed'),
-        content: const Text('The game has ended. You can view the game summary in the Games list.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              context.pop(); // Close dialog
-              context.go('/games'); // Navigate back to games list
-            },
-            child: const Text('OK'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Game Completed'),
+            content: const Text(
+              'The game has ended. You can view the game summary in the Games list.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  context.pop(); // Close dialog
+                  context.go('/games'); // Navigate back to games list
+                },
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
-  
+
   void _startTimer() {
     _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
@@ -192,17 +190,17 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       });
     });
   }
-  
+
   void _handlePlayerSwap(String positionId, Player player) {
     if (_game == null) return;
-    
+
     // Get current player at this position if any
     final currentPlayer = _game!.startingLineup[positionId];
-    
+
     // Make a copy of the lineup and substitutes
     final newLineup = Map<String, Player>.from(_game!.startingLineup);
     final newSubstitutes = List<Player>.from(_game!.substitutes);
-    
+
     // If player is already in another position, remove them from that position
     String? oldPositionId;
     newLineup.forEach((key, value) {
@@ -210,7 +208,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         oldPositionId = key;
       }
     });
-    
+
     if (oldPositionId != null) {
       // This is a position swap - player is already on the field
       if (currentPlayer != null) {
@@ -223,29 +221,34 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     } else {
       // Player is coming from substitutes
       newSubstitutes.remove(player);
-      
+
       if (currentPlayer != null) {
         // Current player becomes a substitute
         newSubstitutes.add(currentPlayer);
       }
     }
-    
+
     // Put the new player in the position
     newLineup[positionId] = player;
-    
+
     // Update the game
     final updatedGame = _game!.copyWith(
       startingLineup: newLineup,
       substitutes: newSubstitutes,
     );
-    
+
     // Update time tracking if the period is active
     if (_isPeriodActive) {
       if (oldPositionId == null) {
         // Player is coming from substitutes - end bench time first, then start play time
-        updatedGame.timeTrackingManager.endCurrentTime(player.id); // End bench time
-        updatedGame.timeTrackingManager.startPlayTime(player.id, positionId); // Start play time
-        
+        updatedGame.timeTrackingManager.endCurrentTime(
+          player.id,
+        ); // End bench time
+        updatedGame.timeTrackingManager.startPlayTime(
+          player.id,
+          positionId,
+        ); // Start play time
+
         if (currentPlayer != null) {
           // Current player becomes a substitute - end tracking
           updatedGame.timeTrackingManager.endCurrentTime(currentPlayer.id);
@@ -257,31 +260,29 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       // If this is the first player being subbed in, start the period
       _startPeriod();
     }
-    
+
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
 
     setState(() {
       _game = updatedGame;
     });
   }
-  
+
   List<Player> getSortedSubstitutes() {
     if (_game == null) return [];
     return _game!.getSortedSubstitutes();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     if (_game == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    
-    final currentPeriod = _game!.periods.isEmpty ? null : _game!.periods[_activePeriod];
-    final periodTimeInSeconds = currentPeriod != null ? currentPeriod.durationMinutes * 60 : 0;
+
+    final currentPeriod =
+        _game!.periods.isEmpty ? null : _game!.periods[_activePeriod];
+    final periodTimeInSeconds =
+        currentPeriod != null ? currentPeriod.durationMinutes * 60 : 0;
     final isOvertime = _activeSeconds > periodTimeInSeconds;
     final minutes = _activeSeconds ~/ 60;
     final seconds = _activeSeconds % 60;
@@ -329,8 +330,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 icon: const Icon(Icons.play_arrow),
                 tooltip: 'Resume Game',
               )
-            else if (_activePeriod < _game!.periods.length && 
-                    (_activePeriod == 0 || _game!.periods[_activePeriod - 1].isCompleted))
+            else if (_activePeriod < _game!.periods.length &&
+                (_activePeriod == 0 ||
+                    _game!.periods[_activePeriod - 1].isCompleted))
               IconButton(
                 onPressed: _startPeriod,
                 icon: const Icon(Icons.play_arrow),
@@ -344,7 +346,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           // Period status and timer
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.primaryContainer.withOpacity(0.3),
             child: Column(
               children: [
                 // Period indicators in a more compact row
@@ -365,15 +369,26 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: isOvertime ? Colors.red.withOpacity(0.2) : Colors.transparent,
+                          color:
+                              isOvertime
+                                  ? Colors.red.withOpacity(0.2)
+                                  : Colors.transparent,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
                           _isPeriodActive ? formattedTime : 'Not Active',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: !_isPeriodActive ? Colors.grey : (isOvertime ? Colors.red : null),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.headlineMedium?.copyWith(
+                            color:
+                                !_isPeriodActive
+                                    ? Colors.grey
+                                    : (isOvertime ? Colors.red : null),
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
@@ -384,19 +399,26 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                             minimumSize: const Size(0, 36),
                           ),
                           child: const Text('End Period'),
                         )
-                      else if (_activePeriod < _game!.periods.length && 
-                              (_activePeriod == 0 || _game!.periods[_activePeriod - 1].isCompleted))
+                      else if (_activePeriod < _game!.periods.length &&
+                          (_activePeriod == 0 ||
+                              _game!.periods[_activePeriod - 1].isCompleted))
                         ElevatedButton(
                           onPressed: _startPeriod,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                             minimumSize: const Size(0, 36),
                           ),
                           child: Text('Start ${_activePeriod + 1}'),
@@ -407,7 +429,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
               ],
             ),
           ),
-          
+
           // Field with draggable players
           Expanded(
             child: Stack(
@@ -424,11 +446,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                     size: Size.infinite,
                   ),
                 ),
-                
+
                 // Position markers for players on the field
                 for (final position in Position.standardPositions)
                   _buildPositionTarget(position),
-                
+
                 // Bench area for substitutes
                 Positioned(
                   bottom: 0,
@@ -443,10 +465,8 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Text(
                             'Substitutes',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(color: Colors.white, fontSize: 12),
                           ),
                         ),
                         Expanded(
@@ -470,27 +490,27 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       ),
     );
   }
-  
+
   Widget _buildCompactPeriodIndicator(int periodIndex) {
     final period = _game!.periods[periodIndex];
     Color color;
     IconData icon;
-    
+
     if (period.isCompleted) {
       color = Colors.green;
       icon = Icons.check_circle;
     } else if (period.isActive) {
       color = Colors.blue;
       icon = Icons.sports;
-    } else if (periodIndex == _activePeriod && 
-              (periodIndex == 0 || _game!.periods[periodIndex - 1].isCompleted)) {
+    } else if (periodIndex == _activePeriod &&
+        (periodIndex == 0 || _game!.periods[periodIndex - 1].isCompleted)) {
       color = Colors.orange;
       icon = Icons.play_circle;
     } else {
       color = Colors.grey;
       icon = Icons.circle_outlined;
     }
-    
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -499,21 +519,29 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         Text(
           'Period ${period.number}',
           style: TextStyle(
-            color: color, 
+            color: color,
             fontSize: 12,
-            fontWeight: periodIndex == _activePeriod ? FontWeight.bold : FontWeight.normal,
+            fontWeight:
+                periodIndex == _activePeriod
+                    ? FontWeight.bold
+                    : FontWeight.normal,
           ),
         ),
       ],
     );
   }
-  
+
   Widget _buildPositionTarget(Position position) {
     final player = _game!.startingLineup[position.id];
-    
+
     return Positioned(
-      left: MediaQuery.of(context).size.width * position.defaultLocation.dx - 25,
-      top: MediaQuery.of(context).size.height * 0.5 * position.defaultLocation.dy - 25,
+      left:
+          MediaQuery.of(context).size.width * position.defaultLocation.dx - 25,
+      top:
+          MediaQuery.of(context).size.height *
+              0.5 *
+              position.defaultLocation.dy -
+          25,
       child: DragTarget<Player>(
         onWillAccept: (incomingPlayer) => true,
         onAccept: (incomingPlayer) {
@@ -527,65 +555,66 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _getColorForCategory(position.category).withOpacity(
-                candidateItems.isNotEmpty ? 0.8 : 0.5
-              ),
+              color: _getColorForCategory(
+                position.category,
+              ).withOpacity(candidateItems.isNotEmpty ? 0.8 : 0.5),
               border: Border.all(
                 color: Colors.white,
                 width: candidateItems.isNotEmpty ? 3 : 1,
               ),
             ),
-            child: player != null
-                ? Container(
-                    width: 50,
-                    height: 50,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '#${player.number}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
+            child:
+                player != null
+                    ? Container(
+                      width: 50,
+                      height: 50,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '#${player.number}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                          Text(
-                            player.name.split(' ').last,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
+                            Text(
+                              player.name.split(' ').last,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            '${_game!.timeTracking.getFormattedTime(player.id)}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 9,
+                            Text(
+                              '${_game!.timeTracking.getFormattedTime(player.id)}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 9,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      ),
+                    )
+                    : Center(
+                      child: Text(
+                        position.abbreviation,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  )
-                : Center(
-                    child: Text(
-                      position.abbreviation,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
           );
         },
       ),
     );
   }
-  
+
   Widget _buildPlayerDraggable(Player player, Position? position) {
     return Draggable<Player>(
       data: player,
@@ -607,9 +636,10 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
           height: 50,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: position != null 
-                ? _getColorForCategory(position.category)
-                : Colors.grey[700],
+            color:
+                position != null
+                    ? _getColorForCategory(position.category)
+                    : Colors.grey[700],
           ),
           child: Center(
             child: Column(
@@ -625,10 +655,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                 ),
                 Text(
                   player.name.split(' ').last,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 10),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -641,51 +668,82 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         child: Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: position != null 
-                ? _getColorForCategory(position.category).withOpacity(0.3)
-                : Colors.grey[700]?.withOpacity(0.3),
+            color:
+                position != null
+                    ? _getColorForCategory(position.category).withOpacity(0.3)
+                    : Colors.grey[700]?.withOpacity(0.3),
           ),
           child: Center(
-            child: position != null
-                ? Text(
-                    position.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                : const Icon(Icons.person_off, color: Colors.white54),
+            child:
+                position != null
+                    ? Text(
+                      position.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                    : const Icon(Icons.person_off, color: Colors.white54),
           ),
         ),
       ),
-      child: position == null
-          ? Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey[700],
-              ),
-              child: Center(
+      child:
+          position == null
+              ? Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.grey[700],
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '#${player.number}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                      Text(
+                        player.name.split(' ').last,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        '${_game!.timeTracking.getFormattedTime(player.id)}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 9,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              : Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       '#${player.number}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11,
+                        fontSize: 14,
                       ),
                     ),
                     Text(
                       player.name.split(' ').last,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
@@ -698,40 +756,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   ],
                 ),
               ),
-            )
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '#${player.number}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    player.name.split(' ').last,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    '${_game!.timeTracking.getFormattedTime(player.id)}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 9,
-                    ),
-                  ),
-                ],
-              ),
-            ),
     );
   }
-  
+
   Color _getColorForCategory(String category) {
     switch (category) {
       case 'Goalkeeper':
@@ -752,31 +779,28 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
 class SoccerFieldPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
+    final paint =
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0;
 
     final width = size.width;
     final height = size.height;
-    
+
     // Center circle
     final centerX = width / 2;
     final centerY = height / 2;
     final centerRadius = width / 10;
     canvas.drawCircle(Offset(centerX, centerY), centerRadius, paint);
-    
+
     // Center line
-    canvas.drawLine(
-      Offset(0, centerY),
-      Offset(width, centerY),
-      paint,
-    );
-    
+    canvas.drawLine(Offset(0, centerY), Offset(width, centerY), paint);
+
     // Goal areas
     final goalAreaHeight = height / 6;
     final goalAreaWidth = width / 2;
-    
+
     // Top goal area
     canvas.drawRect(
       Rect.fromCenter(
@@ -786,7 +810,7 @@ class SoccerFieldPainter extends CustomPainter {
       ),
       paint,
     );
-    
+
     // Bottom goal area
     canvas.drawRect(
       Rect.fromCenter(
@@ -796,11 +820,11 @@ class SoccerFieldPainter extends CustomPainter {
       ),
       paint,
     );
-    
+
     // Draw a small goal at each end
     final goalWidth = width / 6;
     final goalHeight = height / 20;
-    
+
     // Top goal
     canvas.drawRect(
       Rect.fromCenter(
@@ -810,7 +834,7 @@ class SoccerFieldPainter extends CustomPainter {
       ),
       paint,
     );
-    
+
     // Bottom goal
     canvas.drawRect(
       Rect.fromCenter(
@@ -824,4 +848,4 @@ class SoccerFieldPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
-} 
+}

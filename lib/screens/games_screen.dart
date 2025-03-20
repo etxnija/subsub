@@ -12,11 +12,9 @@ class GamesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final games = ref.watch(gamesProvider);
-    
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Games'),
-      ),
+      appBar: AppBar(title: const Text('Games')),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -26,101 +24,120 @@ class GamesScreen extends ConsumerWidget {
         },
         child: const Icon(Icons.add),
       ),
-      body: games.isEmpty
-          ? const Center(
-              child: Text('No games yet. Add a game to get started.'),
-            )
-          : ListView.builder(
-              itemCount: games.length,
-              itemBuilder: (context, index) {
-                final game = games[index];
-                final playerCount = game.startingLineup.length + game.substitutes.length;
-                final isGameReady = game.startingLineup.length >= 7;
-                
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    game.opponent,
-                                    style: Theme.of(context).textTheme.titleLarge,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    DateFormat.yMMMMd().format(game.date),
-                                    style: Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _buildGameStatusBadge(context, game),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            Chip(
-                              label: Text('$playerCount players'),
-                              backgroundColor: Colors.grey[200],
-                            ),
-                            Chip(
-                              label: Text('${game.startingLineup.length}/7 starters'),
-                              backgroundColor: isGameReady 
-                                ? Colors.green[100] 
-                                : Colors.orange[100],
-                            ),
-                            if (game.periods.isNotEmpty)
-                              Chip(
-                                label: Text('${game.periods.length} periods'),
-                                backgroundColor: Colors.blue[100],
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton.icon(
-                              onPressed: () {
-                                // Navigation to edit lineup will be added later
-                              },
-                              icon: const Icon(Icons.edit),
-                              label: const Text('Edit'),
-                            ),
-                            const SizedBox(width: 8),
-                            FilledButton.icon(
-                              onPressed: isGameReady ? () {
-                                context.push('/games/play/${game.id}');
-                              } : null,
-                              icon: const Icon(Icons.sports),
-                              label: const Text('Play'),
-                            ),
-                          ],
-                        ),
-                      ],
+      body:
+          games.isEmpty
+              ? const Center(
+                child: Text('No games yet. Add a game to get started.'),
+              )
+              : ListView.builder(
+                itemCount: games.length,
+                itemBuilder: (context, index) {
+                  final game = games[index];
+                  final playerCount =
+                      game.startingLineup.length + game.substitutes.length;
+                  final isGameReady = game.startingLineup.length >= 7;
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
                     ),
-                  ),
-                );
-              },
-            ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      game.opponent,
+                                      style:
+                                          Theme.of(
+                                            context,
+                                          ).textTheme.titleLarge,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      DateFormat.yMMMMd().format(game.date),
+                                      style:
+                                          Theme.of(
+                                            context,
+                                          ).textTheme.bodyMedium,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _buildGameStatusBadge(context, game),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              Chip(
+                                label: Text('$playerCount players'),
+                                backgroundColor: Colors.grey[200],
+                              ),
+                              Chip(
+                                label: Text(
+                                  '${game.startingLineup.length}/7 starters',
+                                ),
+                                backgroundColor:
+                                    isGameReady
+                                        ? Colors.green[100]
+                                        : Colors.orange[100],
+                              ),
+                              if (game.periods.isNotEmpty)
+                                Chip(
+                                  label: Text('${game.periods.length} periods'),
+                                  backgroundColor: Colors.blue[100],
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton.icon(
+                                onPressed: () {
+                                  // Navigation to edit lineup will be added later
+                                },
+                                icon: const Icon(Icons.edit),
+                                label: const Text('Edit'),
+                              ),
+                              const SizedBox(width: 8),
+                              FilledButton.icon(
+                                onPressed:
+                                    isGameReady
+                                        ? () {
+                                          context.push(
+                                            '/games/play/${game.id}',
+                                          );
+                                        }
+                                        : null,
+                                icon: const Icon(Icons.sports),
+                                label: const Text('Play'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
     );
   }
-  
+
   Widget _buildGameStatusBadge(BuildContext context, Game game) {
     Color color;
     String text;
     IconData icon;
-    
+
     switch (game.status) {
       case GameStatus.setup:
         color = Colors.grey;
@@ -143,7 +160,7 @@ class GamesScreen extends ConsumerWidget {
         icon = Icons.check_circle;
         break;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -158,13 +175,10 @@ class GamesScreen extends ConsumerWidget {
           const SizedBox(width: 4),
           Text(
             text,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
           ),
         ],
       ),
     );
   }
-} 
+}

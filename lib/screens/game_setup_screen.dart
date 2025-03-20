@@ -21,11 +21,11 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
   final Set<Player> _selectedPlayers = {};
   int _periodCount = 3;
   int _periodDuration = 15;
-  
+
   @override
   Widget build(BuildContext context) {
     final allPlayers = ref.watch(rosterProvider);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Set Up Game'),
@@ -81,7 +81,9 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                           context: context,
                           initialDate: _gameDate,
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
                         );
                         if (date != null) {
                           setState(() => _gameDate = date);
@@ -93,7 +95,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Period Configuration
             Card(
               child: Padding(
@@ -118,12 +120,13 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                               border: OutlineInputBorder(),
                             ),
                             value: _periodCount,
-                            items: [2, 3, 4].map((count) {
-                              return DropdownMenuItem<int>(
-                                value: count,
-                                child: Text('$count periods'),
-                              );
-                            }).toList(),
+                            items:
+                                [2, 3, 4].map((count) {
+                                  return DropdownMenuItem<int>(
+                                    value: count,
+                                    child: Text('$count periods'),
+                                  );
+                                }).toList(),
                             onChanged: (value) {
                               if (value != null) {
                                 setState(() => _periodCount = value);
@@ -139,12 +142,13 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                               border: OutlineInputBorder(),
                             ),
                             value: _periodDuration,
-                            items: [10, 15, 20, 25, 30].map((minutes) {
-                              return DropdownMenuItem<int>(
-                                value: minutes,
-                                child: Text('$minutes minutes'),
-                              );
-                            }).toList(),
+                            items:
+                                [10, 15, 20, 25, 30].map((minutes) {
+                                  return DropdownMenuItem<int>(
+                                    value: minutes,
+                                    child: Text('$minutes minutes'),
+                                  );
+                                }).toList(),
                             onChanged: (value) {
                               if (value != null) {
                                 setState(() => _periodDuration = value);
@@ -164,7 +168,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Player Selection Section
             Card(
               child: Padding(
@@ -189,20 +193,22 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    ...allPlayers.map((player) => CheckboxListTile(
-                      title: Text(player.name),
-                      subtitle: Text('#${player.number}'),
-                      value: _selectedPlayers.contains(player),
-                      onChanged: (selected) {
-                        setState(() {
-                          if (selected ?? false) {
-                            _selectedPlayers.add(player);
-                          } else {
-                            _selectedPlayers.remove(player);
-                          }
-                        });
-                      },
-                    )),
+                    ...allPlayers.map(
+                      (player) => CheckboxListTile(
+                        title: Text(player.name),
+                        subtitle: Text('#${player.number}'),
+                        value: _selectedPlayers.contains(player),
+                        onChanged: (selected) {
+                          setState(() {
+                            if (selected ?? false) {
+                              _selectedPlayers.add(player);
+                            } else {
+                              _selectedPlayers.remove(player);
+                            }
+                          });
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -215,53 +221,55 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
 
   void _proceedToLineup() {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Create a new game with empty lineup
     final game = Game(
       id: 'temp_${DateTime.now().millisecondsSinceEpoch}', // Temporary ID
       date: _gameDate,
       opponent: _opponentController.text,
       startingLineup: {}, // Empty lineup to be filled in the next screen
-      substitutes: _selectedPlayers.toList(), // All selected players start as subs
+      substitutes:
+          _selectedPlayers.toList(), // All selected players start as subs
       periods: Game.defaultPeriods(
         count: _periodCount,
         durationMinutes: _periodDuration,
       ),
     );
-    
+
     // Navigate to field screen for lineup selection
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FieldScreen(
-          game: game,
-          onLineupComplete: (updatedGame) async {
-            // Save the game with lineup to database
-            try {
-              await ref.read(gamesProvider.notifier).addGame(updatedGame);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Game setup complete!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-                // Navigate back to the games list
-                Navigator.of(context).popUntil((route) => route.isFirst);
-                GoRouter.of(context).go('/games');
-              }
-            } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error saving game: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            }
-          },
-        ),
+        builder:
+            (context) => FieldScreen(
+              game: game,
+              onLineupComplete: (updatedGame) async {
+                // Save the game with lineup to database
+                try {
+                  await ref.read(gamesProvider.notifier).addGame(updatedGame);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Game setup complete!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    // Navigate back to the games list
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                    GoRouter.of(context).go('/games');
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error saving game: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
       ),
     );
   }
@@ -271,4 +279,4 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
     _opponentController.dispose();
     super.dispose();
   }
-} 
+}

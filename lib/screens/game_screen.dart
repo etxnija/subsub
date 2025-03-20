@@ -16,9 +16,7 @@ class GameScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: const Center(
-        child: Text('Game management coming soon!'),
-      ),
+      body: const Center(child: Text('Game management coming soon!')),
     );
   }
 
@@ -26,16 +24,17 @@ class GameScreen extends ConsumerWidget {
     // TODO: Implement new game dialog
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New Game'),
-        content: const Text('Game creation coming soon!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('New Game'),
+            content: const Text('Game creation coming soon!'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
-} 
+}

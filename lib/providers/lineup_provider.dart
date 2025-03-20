@@ -26,6 +26,7 @@ class LineupNotifier extends StateNotifier<Map<String, Player?>> {
   }
 }
 
-final lineupProvider = StateNotifierProvider<LineupNotifier, Map<String, Player?>>((ref) {
-  return LineupNotifier();
-}); 
+final lineupProvider =
+    StateNotifierProvider<LineupNotifier, Map<String, Player?>>((ref) {
+      return LineupNotifier();
+    });

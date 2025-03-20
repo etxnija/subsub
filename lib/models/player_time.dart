@@ -46,7 +46,10 @@ class PlayerTimeRecord {
       playerId: map['playerId'] as String,
       positionId: map['positionId'] as String?,
       startTime: DateTime.parse(map['startTime'] as String),
-      endTime: map['endTime'] != null ? DateTime.parse(map['endTime'] as String) : null,
+      endTime:
+          map['endTime'] != null
+              ? DateTime.parse(map['endTime'] as String)
+              : null,
     );
   }
 }
@@ -54,9 +57,8 @@ class PlayerTimeRecord {
 class GameTimeTracking {
   Map<String, List<PlayerTimeRecord>> playerRecords;
 
-  GameTimeTracking({
-    Map<String, List<PlayerTimeRecord>>? playerRecords,
-  }) : playerRecords = playerRecords ?? {};
+  GameTimeTracking({Map<String, List<PlayerTimeRecord>>? playerRecords})
+    : playerRecords = playerRecords ?? {};
 
   int getSecondsPlayed(String playerId) {
     final records = playerRecords[playerId] ?? [];
@@ -82,7 +84,10 @@ class GameTimeTracking {
     final records = playerRecords[playerId] ?? [];
     final playRecords = records.where((record) => record.positionId != null);
     if (playRecords.isEmpty) return '0s';
-    final totalSeconds = playRecords.fold(0, (sum, record) => sum + record.durationSeconds);
+    final totalSeconds = playRecords.fold(
+      0,
+      (sum, record) => sum + record.durationSeconds,
+    );
     if (totalSeconds < 60) {
       return '${totalSeconds}s';
     }
@@ -93,7 +98,10 @@ class GameTimeTracking {
     final records = playerRecords[playerId] ?? [];
     final benchRecords = records.where((record) => record.positionId == null);
     if (benchRecords.isEmpty) return '0s';
-    final totalSeconds = benchRecords.fold(0, (sum, record) => sum + record.durationSeconds);
+    final totalSeconds = benchRecords.fold(
+      0,
+      (sum, record) => sum + record.durationSeconds,
+    );
     if (totalSeconds < 60) {
       return '${totalSeconds}s';
     }
@@ -132,10 +140,8 @@ class GameTimeTracking {
   Map<String, dynamic> toMap() {
     return {
       'playerRecords': playerRecords.map(
-        (key, value) => MapEntry(
-          key,
-          value.map((record) => record.toMap()).toList(),
-        ),
+        (key, value) =>
+            MapEntry(key, value.map((record) => record.toMap()).toList()),
       ),
     };
   }
@@ -145,9 +151,11 @@ class GameTimeTracking {
       playerRecords: (map['playerRecords'] as Map<String, dynamic>).map(
         (key, value) => MapEntry(
           key,
-          (value as List).map((record) => PlayerTimeRecord.fromMap(record)).toList(),
+          (value as List)
+              .map((record) => PlayerTimeRecord.fromMap(record))
+              .toList(),
         ),
       ),
     );
   }
-} 
+}

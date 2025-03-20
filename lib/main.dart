@@ -6,20 +6,17 @@ import 'package:subsub/services/database_service.dart';
 
 // Flag to track if we've already reset the database
 const String kDbVersionKey = 'db_version';
-const int kCurrentDbVersion = 3; // Match this with the version in database_service.dart
+const int kCurrentDbVersion =
+    3; // Match this with the version in database_service.dart
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Reset the database to handle schema changes
   final dbService = DatabaseService();
   await dbService.resetDatabase();
-  
-  runApp(
-    const ProviderScope(
-      child: App(),
-    ),
-  );
+
+  runApp(const ProviderScope(child: App()));
 }
 
 class App extends ConsumerWidget {
