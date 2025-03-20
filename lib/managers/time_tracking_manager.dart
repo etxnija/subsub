@@ -6,27 +6,28 @@ class TimeTrackingManager {
   final Game game;
   Function(Game) onGameUpdated;
 
-  TimeTrackingManager({
-    required this.game,
-    required this.onGameUpdated,
-  });
+  TimeTrackingManager({required this.game, required this.onGameUpdated});
 
   void startPlayTime(String playerId, String positionId) {
-    game.timeTracking.addRecord(PlayerTimeRecord(
-      playerId: playerId,
-      positionId: positionId,
-      startTime: DateTime.now(),
-      endTime: null,
-    ));
+    game.timeTracking.addRecord(
+      PlayerTimeRecord(
+        playerId: playerId,
+        positionId: positionId,
+        startTime: DateTime.now(),
+        endTime: null,
+      ),
+    );
     onGameUpdated(game);
   }
 
   void startBenchTime(String playerId) {
-    game.timeTracking.addRecord(PlayerTimeRecord(
-      playerId: playerId,
-      startTime: DateTime.now(),
-      endTime: null,
-    ));
+    game.timeTracking.addRecord(
+      PlayerTimeRecord(
+        playerId: playerId,
+        startTime: DateTime.now(),
+        endTime: null,
+      ),
+    );
     onGameUpdated(game);
   }
 
@@ -43,7 +44,7 @@ class TimeTrackingManager {
     // Find the position IDs for both players
     String? positionId1;
     String? positionId2;
-    
+
     for (final entry in game.startingLineup.entries) {
       if (entry.value.id == player1.id) {
         positionId1 = entry.key;
@@ -96,4 +97,4 @@ class TimeTrackingManager {
       endCurrentTime(player.id);
     }
   }
-} 
+}

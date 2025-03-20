@@ -14,7 +14,7 @@ final gamesProvider = StateNotifierProvider<GamesNotifier, List<Game>>((ref) {
 class GamesNotifier extends StateNotifier<List<Game>> {
   final DatabaseService _databaseService;
   static const String tableName = 'games';
-  
+
   GamesNotifier(this._databaseService) : super([]) {
     loadGames();
   }
@@ -52,4 +52,4 @@ class GamesNotifier extends StateNotifier<List<Game>> {
     await _databaseService.deleteGame(game.id);
     state = state.where((g) => g.id != game.id).toList();
   }
-} 
+}

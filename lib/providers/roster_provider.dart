@@ -28,9 +28,9 @@ class RosterNotifier extends StateNotifier<List<Player>> {
     final player = Player(
       id: _uuid.v4(), // Generate UUID
       name: name,
-      number: number
+      number: number,
     );
-    
+
     await _database.insertPlayer(player);
     state = [...state, player];
   }

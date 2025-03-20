@@ -20,10 +20,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   icon: Icon(Icons.people),
                   label: 'Roster',
                 ),
-                NavigationDestination(
-                  icon: Icon(Icons.sports),
-                  label: 'Games',
-                ),
+                NavigationDestination(icon: Icon(Icons.sports), label: 'Games'),
                 NavigationDestination(
                   icon: Icon(Icons.sports_soccer),
                   label: 'Field',
@@ -47,10 +44,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
         routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => const RosterScreen(),
-          ),
+          GoRoute(path: '/', builder: (context, state) => const RosterScreen()),
           GoRoute(
             path: '/games',
             builder: (context, state) => const GamesScreen(),
@@ -80,4 +74,4 @@ int _calculateSelectedIndex(GoRouterState state) {
   if (location == '/games') return 1;
   if (location == '/field') return 2;
   return 0;
-} 
+}

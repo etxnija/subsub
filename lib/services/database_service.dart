@@ -25,16 +25,16 @@ class DatabaseService {
   Future<void> resetDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, databaseName);
-    
+
     // Close the database if it's open
     if (_database != null) {
       await _database!.close();
       _database = null;
     }
-    
+
     // Delete the database file
     await deleteDatabase(path);
-    
+
     // Reinitialize the database
     _database = await _initDatabase();
   }
@@ -44,8 +44,8 @@ class DatabaseService {
     final path = join(dbPath, databaseName);
 
     return await openDatabase(
-      path, 
-      version: _databaseVersion, 
+      path,
+      version: _databaseVersion,
       onCreate: _createDatabase,
       onUpgrade: _onUpgrade,
     );
@@ -94,7 +94,7 @@ class DatabaseService {
       await db.execute('''
         ALTER TABLE games ADD COLUMN time_tracking_json TEXT DEFAULT '{}'
       ''');
-      
+
       // Migrate existing time tracking data
       final games = await db.query('games');
       for (final game in games) {
@@ -106,12 +106,12 @@ class DatabaseService {
           whereArgs: [game['id']],
         );
       }
-      
+
       // Drop the old column
       await db.execute('''
         ALTER TABLE games DROP COLUMN time_tracking
       ''');
-      
+
       // Rename the new column
       await db.execute('''
         ALTER TABLE games RENAME COLUMN time_tracking_json TO time_tracking
@@ -157,11 +157,14 @@ class DatabaseService {
 
   Future<void> seedTopPlayers([Database? providedDb]) async {
     final db = providedDb ?? await database;
-    
+
     // Check if we already have players
-    final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM players'));
-    if (count != null && count > 0) return; // Don't seed if we already have players
-    
+    final count = Sqflite.firstIntValue(
+      await db.rawQuery('SELECT COUNT(*) FROM players'),
+    );
+    if (count != null && count > 0)
+      return; // Don't seed if we already have players
+
     final topPlayers = [
       Player(id: const Uuid().v4(), name: 'Erling Haaland', number: 9),
       Player(id: const Uuid().v4(), name: 'Kylian Mbappé', number: 7),
@@ -206,25 +209,21 @@ class DatabaseService {
       whereArgs: [id],
       limit: 1,
     );
-    
+
     return results.isNotEmpty ? results.first : null;
   }
 
   Future<int> update(
-    String table, 
-    Map<String, dynamic> data, 
-    String where, 
-    List<Object> whereArgs
+    String table,
+    Map<String, dynamic> data,
+    String where,
+    List<Object> whereArgs,
   ) async {
     final db = await database;
     return await db.update(table, data, where: where, whereArgs: whereArgs);
   }
 
-  Future<int> delete(
-    String table, 
-    String where, 
-    List<Object> whereArgs
-  ) async {
+  Future<int> delete(String table, String where, List<Object> whereArgs) async {
     final db = await database;
     return await db.delete(table, where: where, whereArgs: whereArgs);
   }
@@ -240,12 +239,7 @@ class DatabaseService {
   }
 
   Future<void> updatePlayer(Player player) async {
-    await update(
-      'players',
-      player.toMap(),
-      'id = ?',
-      [player.id],
-    );
+    await update('players', player.toMap(), 'id = ?', [player.id]);
   }
 
   Future<void> deletePlayer(String id) async {
@@ -256,59 +250,48 @@ class DatabaseService {
     final db = await database;
     await db.transaction((txn) async {
       // Convert complex types to JSON strings
-      final lineupJson = jsonEncode(game.startingLineup.map(
-        (key, value) => MapEntry(key, value.toMap()),
-      ));
-      
-      final substitutesJson = jsonEncode(game.substitutes.map((p) => p.toMap()).toList());
-      final periodsJson = jsonEncode(game.periods.map((p) => p.toMap()).toList());
+      final lineupJson = jsonEncode(
+        game.startingLineup.map((key, value) => MapEntry(key, value.toMap())),
+      );
+
+      final substitutesJson = jsonEncode(
+        game.substitutes.map((p) => p.toMap()).toList(),
+      );
+      final periodsJson = jsonEncode(
+        game.periods.map((p) => p.toMap()).toList(),
+      );
       final timeTrackingJson = jsonEncode(game.timeTracking.toMap());
 
-      await txn.insert(
-        'games',
-        {
-          'id': game.id,
-          'date': game.date.toIso8601String(),
-          'opponent': game.opponent,
-          'startingLineup': lineupJson,
-          'substitutes': substitutesJson,
-          'periods': periodsJson,
-          'status': game.status.toString(),
-          'timeTracking': timeTrackingJson,
-        },
-      );
+      await txn.insert('games', {
+        'id': game.id,
+        'date': game.date.toIso8601String(),
+        'opponent': game.opponent,
+        'startingLineup': lineupJson,
+        'substitutes': substitutesJson,
+        'periods': periodsJson,
+        'status': game.status.toString(),
+        'timeTracking': timeTrackingJson,
+      });
 
       // Insert lineup entries
       for (final entry in game.startingLineup.entries) {
-        await txn.insert(
-          'game_lineup',
-          {
-            'game_id': game.id,
-            'position_id': entry.key,
-            'player_id': entry.value.id,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await txn.insert('game_lineup', {
+          'game_id': game.id,
+          'position_id': entry.key,
+          'player_id': entry.value.id,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     });
   }
-  
+
   Future<void> deleteGame(String id) async {
     final db = await database;
     await db.transaction((txn) async {
       // Delete lineup entries
-      await txn.delete(
-        'game_lineup',
-        where: 'game_id = ?',
-        whereArgs: [id],
-      );
-      
+      await txn.delete('game_lineup', where: 'game_id = ?', whereArgs: [id]);
+
       // Delete the game record
-      await txn.delete(
-        'games',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
+      await txn.delete('games', where: 'id = ?', whereArgs: [id]);
     });
   }
 
@@ -316,12 +299,16 @@ class DatabaseService {
     final db = await database;
     await db.transaction((txn) async {
       // Convert complex types to JSON strings
-      final lineupJson = jsonEncode(game.startingLineup.map(
-        (key, value) => MapEntry(key, value.toMap()),
-      ));
-      
-      final substitutesJson = jsonEncode(game.substitutes.map((p) => p.toMap()).toList());
-      final periodsJson = jsonEncode(game.periods.map((p) => p.toMap()).toList());
+      final lineupJson = jsonEncode(
+        game.startingLineup.map((key, value) => MapEntry(key, value.toMap())),
+      );
+
+      final substitutesJson = jsonEncode(
+        game.substitutes.map((p) => p.toMap()).toList(),
+      );
+      final periodsJson = jsonEncode(
+        game.periods.map((p) => p.toMap()).toList(),
+      );
       final timeTrackingJson = jsonEncode(game.timeTracking.toMap());
 
       await txn.update(
@@ -340,17 +327,17 @@ class DatabaseService {
       );
 
       // Update game lineup
-      await txn.delete('game_lineup', where: 'game_id = ?', whereArgs: [game.id]);
+      await txn.delete(
+        'game_lineup',
+        where: 'game_id = ?',
+        whereArgs: [game.id],
+      );
       for (final entry in game.startingLineup.entries) {
-        await txn.insert(
-          'game_lineup',
-          {
-            'game_id': game.id,
-            'position_id': entry.key,
-            'player_id': entry.value.id,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await txn.insert('game_lineup', {
+          'game_id': game.id,
+          'position_id': entry.key,
+          'player_id': entry.value.id,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     });
   }
@@ -366,24 +353,30 @@ class DatabaseService {
     if (maps.isEmpty) return null;
 
     final map = maps.first;
-    
+
     // Parse JSON strings back to complex types
-    final lineupJson = jsonDecode(map['startingLineup'] as String) as Map<String, dynamic>;
+    final lineupJson =
+        jsonDecode(map['startingLineup'] as String) as Map<String, dynamic>;
     final lineup = lineupJson.map(
-      (key, value) => MapEntry(key, Player.fromMap(value as Map<String, dynamic>)),
+      (key, value) =>
+          MapEntry(key, Player.fromMap(value as Map<String, dynamic>)),
     );
 
-    final substitutesJson = jsonDecode(map['substitutes'] as String) as List<dynamic>;
-    final substitutes = substitutesJson
-        .map((item) => Player.fromMap(item as Map<String, dynamic>))
-        .toList();
+    final substitutesJson =
+        jsonDecode(map['substitutes'] as String) as List<dynamic>;
+    final substitutes =
+        substitutesJson
+            .map((item) => Player.fromMap(item as Map<String, dynamic>))
+            .toList();
 
     final periodsJson = jsonDecode(map['periods'] as String) as List<dynamic>;
-    final periods = periodsJson
-        .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
-        .toList();
+    final periods =
+        periodsJson
+            .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
+            .toList();
 
-    final timeTrackingJson = jsonDecode(map['timeTracking'] as String) as Map<String, dynamic>;
+    final timeTrackingJson =
+        jsonDecode(map['timeTracking'] as String) as Map<String, dynamic>;
     final timeTracking = GameTimeTracking.fromMap(timeTrackingJson);
 
     return Game(
@@ -404,34 +397,43 @@ class DatabaseService {
   Future<List<Game>> getGames() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('games');
-    
+
     return maps.map((map) {
       try {
         // Parse JSON strings back to complex types with null safety
-        final lineupJson = map['startingLineup'] != null 
-            ? jsonDecode(map['startingLineup'] as String) as Map<String, dynamic>
-            : <String, dynamic>{};
+        final lineupJson =
+            map['startingLineup'] != null
+                ? jsonDecode(map['startingLineup'] as String)
+                    as Map<String, dynamic>
+                : <String, dynamic>{};
         final lineup = lineupJson.map(
-          (key, value) => MapEntry(key, Player.fromMap(value as Map<String, dynamic>)),
+          (key, value) =>
+              MapEntry(key, Player.fromMap(value as Map<String, dynamic>)),
         );
 
-        final substitutesJson = map['substitutes'] != null
-            ? jsonDecode(map['substitutes'] as String) as List<dynamic>
-            : <dynamic>[];
-        final substitutes = substitutesJson
-            .map((item) => Player.fromMap(item as Map<String, dynamic>))
-            .toList();
+        final substitutesJson =
+            map['substitutes'] != null
+                ? jsonDecode(map['substitutes'] as String) as List<dynamic>
+                : <dynamic>[];
+        final substitutes =
+            substitutesJson
+                .map((item) => Player.fromMap(item as Map<String, dynamic>))
+                .toList();
 
-        final periodsJson = map['periods'] != null
-            ? jsonDecode(map['periods'] as String) as List<dynamic>
-            : <dynamic>[];
-        final periods = periodsJson
-            .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
-            .toList();
+        final periodsJson =
+            map['periods'] != null
+                ? jsonDecode(map['periods'] as String) as List<dynamic>
+                : <dynamic>[];
+        final periods =
+            periodsJson
+                .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
+                .toList();
 
-        final timeTrackingJson = map['timeTracking'] != null
-            ? jsonDecode(map['timeTracking'] as String) as Map<String, dynamic>
-            : <String, dynamic>{};
+        final timeTrackingJson =
+            map['timeTracking'] != null
+                ? jsonDecode(map['timeTracking'] as String)
+                    as Map<String, dynamic>
+                : <String, dynamic>{};
         final timeTracking = GameTimeTracking.fromMap(timeTrackingJson);
 
         return Game(

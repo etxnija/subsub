@@ -4,12 +4,7 @@ import 'package:subsub/models/player_time.dart';
 import 'package:subsub/models/position.dart';
 import 'package:subsub/managers/time_tracking_manager.dart';
 
-enum GameStatus {
-  setup,
-  inProgress,
-  paused,
-  completed
-}
+enum GameStatus { setup, inProgress, paused, completed }
 
 class GamePeriod {
   final int number;
@@ -26,7 +21,7 @@ class GamePeriod {
 
   bool get isActive => startTime != null && endTime == null;
   bool get isCompleted => startTime != null && endTime != null;
-  
+
   Duration get elapsed {
     if (startTime == null) return Duration.zero;
     final end = endTime ?? DateTime.now();
@@ -46,8 +41,14 @@ class GamePeriod {
     return GamePeriod(
       number: map['number'] as int,
       durationMinutes: map['durationMinutes'] as int,
-      startTime: map['startTime'] != null ? DateTime.parse(map['startTime'] as String) : null,
-      endTime: map['endTime'] != null ? DateTime.parse(map['endTime'] as String) : null,
+      startTime:
+          map['startTime'] != null
+              ? DateTime.parse(map['startTime'] as String)
+              : null,
+      endTime:
+          map['endTime'] != null
+              ? DateTime.parse(map['endTime'] as String)
+              : null,
     );
   }
 }
@@ -130,7 +131,8 @@ class Game {
       timeTracking: timeTracking ?? this.timeTracking,
     );
     // Copy the timeTrackingManager's onGameUpdated callback
-    newGame.timeTrackingManager.onGameUpdated = timeTrackingManager.onGameUpdated;
+    newGame.timeTrackingManager.onGameUpdated =
+        timeTrackingManager.onGameUpdated;
     return newGame;
   }
 
@@ -151,34 +153,42 @@ class Game {
 
   factory Game.fromMap(Map<String, dynamic> map) {
     // Parse JSON strings for complex types
-    final lineupJson = map['startingLineup'] is String 
-        ? jsonDecode(map['startingLineup'] as String) as Map<String, dynamic>
-        : map['startingLineup'] as Map<String, dynamic>;
-    
+    final lineupJson =
+        map['startingLineup'] is String
+            ? jsonDecode(map['startingLineup'] as String)
+                as Map<String, dynamic>
+            : map['startingLineup'] as Map<String, dynamic>;
+
     final lineup = lineupJson.map(
-      (key, value) => MapEntry(key, Player.fromMap(value as Map<String, dynamic>)),
+      (key, value) =>
+          MapEntry(key, Player.fromMap(value as Map<String, dynamic>)),
     );
 
-    final substitutesJson = map['substitutes'] is String
-        ? jsonDecode(map['substitutes'] as String) as List<dynamic>
-        : map['substitutes'] as List<dynamic>;
-    
-    final substitutes = substitutesJson
-        .map((item) => Player.fromMap(item as Map<String, dynamic>))
-        .toList();
+    final substitutesJson =
+        map['substitutes'] is String
+            ? jsonDecode(map['substitutes'] as String) as List<dynamic>
+            : map['substitutes'] as List<dynamic>;
 
-    final periodsJson = map['periods'] is String
-        ? jsonDecode(map['periods'] as String) as List<dynamic>
-        : map['periods'] as List<dynamic>;
-    
-    final periods = periodsJson
-        .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
-        .toList();
+    final substitutes =
+        substitutesJson
+            .map((item) => Player.fromMap(item as Map<String, dynamic>))
+            .toList();
 
-    final timeTrackingJson = map['timeTracking'] is String
-        ? jsonDecode(map['timeTracking'] as String) as Map<String, dynamic>
-        : map['timeTracking'] as Map<String, dynamic>;
-    
+    final periodsJson =
+        map['periods'] is String
+            ? jsonDecode(map['periods'] as String) as List<dynamic>
+            : map['periods'] as List<dynamic>;
+
+    final periods =
+        periodsJson
+            .map((item) => GamePeriod.fromMap(item as Map<String, dynamic>))
+            .toList();
+
+    final timeTrackingJson =
+        map['timeTracking'] is String
+            ? jsonDecode(map['timeTracking'] as String) as Map<String, dynamic>
+            : map['timeTracking'] as Map<String, dynamic>;
+
     final timeTracking = GameTimeTracking.fromMap(timeTrackingJson);
 
     return Game(
@@ -197,13 +207,14 @@ class Game {
   }
 
   // Helper to create default 7v7 game periods
-  static List<GamePeriod> defaultPeriods({int count = 3, int durationMinutes = 15}) {
+  static List<GamePeriod> defaultPeriods({
+    int count = 3,
+    int durationMinutes = 15,
+  }) {
     return List.generate(
       count,
-      (index) => GamePeriod(
-        number: index + 1,
-        durationMinutes: durationMinutes,
-      ),
+      (index) =>
+          GamePeriod(number: index + 1, durationMinutes: durationMinutes),
     );
   }
 
@@ -230,28 +241,28 @@ class Game {
 
   List<Player> getSortedSubstitutes() {
     final substitutes = List<Player>.from(this.substitutes);
-    
+
     substitutes.sort((a, b) {
       // First compare by time on bench (longest first)
       final benchTimeA = timeTracking.getSecondsOnBench(a.id);
       final benchTimeB = timeTracking.getSecondsOnBench(b.id);
-      
+
       if (benchTimeA != benchTimeB) {
         return benchTimeB.compareTo(benchTimeA); // Longer bench time first
       }
-      
+
       // If bench times are equal, compare by total playing time (least first)
       final playTimeA = timeTracking.getSecondsPlayed(a.id);
       final playTimeB = timeTracking.getSecondsPlayed(b.id);
-      
+
       if (playTimeA != playTimeB) {
         return playTimeA.compareTo(playTimeB); // Less playing time first
       }
-      
+
       // If both times are equal, maintain current order
       return 0;
     });
-    
+
     return substitutes;
   }
 }
