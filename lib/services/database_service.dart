@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 import '../models/player.dart';
@@ -16,6 +17,8 @@ class DatabaseService {
   static Database? _database;
   static const String databaseName = 'subsub.db';
   static const int _databaseVersion = 6; // Increase version to add periods
+  static const String kDbVersionKey = 'db_version';
+  static const int kCurrentDbVersion = 6;
 
   Future<Database> get database async {
     _database ??= await _initDatabase();
@@ -23,20 +26,76 @@ class DatabaseService {
   }
 
   Future<void> resetDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, databaseName);
+    try {
+      // Close any existing database connection
+      if (_database != null) {
+        await _database!.close();
+        _database = null;
+      }
 
-    // Close the database if it's open
-    if (_database != null) {
-      await _database!.close();
-      _database = null;
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, databaseName);
+
+      // Get current version from preferences
+      final prefs = await SharedPreferences.getInstance();
+      final currentVersion = prefs.getInt(kDbVersionKey) ?? 0;
+
+      // Always close and reopen the database in release mode
+      if (await databaseExists(path)) {
+        _database = await openDatabase(
+          path,
+          version: kCurrentDbVersion,
+          onCreate: _createDatabase,
+          onUpgrade: _onUpgrade,
+        );
+      } else {
+        // Create a new database if it doesn't exist
+        _database = await openDatabase(
+          path,
+          version: kCurrentDbVersion,
+          onCreate: _createDatabase,
+        );
+
+        // Seed initial data
+        await seedTopPlayers(_database);
+
+        // Update version in preferences
+        await prefs.setInt(kDbVersionKey, kCurrentDbVersion);
+      }
+    } catch (e, stackTrace) {
+      print('Error resetting database: $e\n$stackTrace');
+      // Attempt to recover by deleting the database file and trying again
+      try {
+        if (_database != null) {
+          await _database!.close();
+          _database = null;
+        }
+
+        final databasesPath = await getDatabasesPath();
+        final path = join(databasesPath, databaseName);
+
+        if (await databaseExists(path)) {
+          await deleteDatabase(path);
+        }
+
+        // Create a new database from scratch
+        _database = await openDatabase(
+          path,
+          version: kCurrentDbVersion,
+          onCreate: _createDatabase,
+        );
+
+        // Seed initial data
+        await seedTopPlayers(_database);
+
+        // Reset the version in preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt(kDbVersionKey, kCurrentDbVersion);
+      } catch (e2) {
+        print('Failed to recover database: $e2');
+        rethrow; // If recovery fails, let the app show the error screen
+      }
     }
-
-    // Delete the database file
-    await deleteDatabase(path);
-
-    // Reinitialize the database
-    _database = await _initDatabase();
   }
 
   Future<Database> _initDatabase() async {
