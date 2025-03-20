@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:subsub/main.dart';
+import 'package:subsub/models/game.dart';
 import 'package:subsub/models/player.dart';
 import 'package:subsub/services/database_service.dart';
 
@@ -24,14 +25,61 @@ class MockDatabaseService implements DatabaseService {
   Future<void> updatePlayer(Player player) async {}
 
   @override
-  Future<void> deletePlayer(int id) async {}
+  Future<void> deletePlayer(String id) async {}
 
   @override
   Future<Database> get database async => throw UnimplementedError();
 
-  // Implement other methods as needed
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<void> resetDatabase() async {}
+
+  @override
+  Future<List<Player>> getPlayersForGame(String gameId) async => [];
+
+  @override
+  Future<void> updateGamePlayers(String gameId, List<Player> players) async {}
+
+  @override
+  Future<int> delete(
+    String table,
+    String where,
+    List<Object> whereArgs,
+  ) async => 1;
+
+  @override
+  Future<void> deleteGame(String id) async {}
+
+  @override
+  Future<List<Map<String, dynamic>>> getAll(String table) async => [];
+
+  @override
+  Future<Map<String, dynamic>?> getById(String table, String id) async => null;
+
+  @override
+  Future<Game?> getGame(String id) async => null;
+
+  @override
+  Future<List<Game>> getGames() async => [];
+
+  @override
+  Future<int> insert(String table, Map<String, dynamic> data) async => 1;
+
+  @override
+  Future<void> insertGame(Game game) async {}
+
+  @override
+  Future<void> seedTopPlayers([Database? providedDb]) async {}
+
+  @override
+  Future<int> update(
+    String table,
+    Map<String, dynamic> data,
+    String where,
+    List<Object> whereArgs,
+  ) async => 1;
+
+  @override
+  Future<void> updateGame(Game game) async {}
 }
 
 void main() {
@@ -48,7 +96,7 @@ void main() {
 
     // Build our app and trigger a frame.
     await tester.pumpWidget(
-      UncontrolledProviderScope(container: container, child: const SubSubApp()),
+      UncontrolledProviderScope(container: container, child: const App()),
     );
 
     // Verify that we have the roster screen title
