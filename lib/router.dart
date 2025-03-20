@@ -8,7 +8,7 @@ import 'package:subsub/screens/game_stats_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/games',
     routes: [
       ShellRoute(
         builder: (context, state, child) {
@@ -16,20 +16,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             body: child,
             bottomNavigationBar: NavigationBar(
               destinations: const [
+                NavigationDestination(icon: Icon(Icons.sports), label: 'Games'),
                 NavigationDestination(
                   icon: Icon(Icons.people),
                   label: 'Roster',
                 ),
-                NavigationDestination(icon: Icon(Icons.sports), label: 'Games'),
               ],
               selectedIndex: _calculateSelectedIndex(state),
               onDestinationSelected: (index) {
                 switch (index) {
                   case 0:
-                    context.go('/');
+                    context.go('/games');
                     break;
                   case 1:
-                    context.go('/games');
+                    context.go('/');
                     break;
                 }
               },
@@ -37,7 +37,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
         routes: [
-          GoRoute(path: '/', builder: (context, state) => const RosterScreen()),
           GoRoute(
             path: '/games',
             builder: (context, state) => const GamesScreen(),
@@ -58,6 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          GoRoute(path: '/', builder: (context, state) => const RosterScreen()),
         ],
       ),
     ],
@@ -66,7 +66,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
 int _calculateSelectedIndex(GoRouterState state) {
   final location = state.uri.path;
-  if (location == '/') return 0;
-  if (location == '/games') return 1;
+  if (location == '/games') return 0;
+  if (location == '/') return 1;
   return 0;
 }
