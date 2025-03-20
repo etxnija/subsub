@@ -567,13 +567,6 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                               fontSize: 9,
                             ),
                           ),
-                          Text(
-                            'B: ${_game!.timeTracking.getFormattedBenchTime(player.id)}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 9,
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -702,13 +695,6 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                         fontSize: 9,
                       ),
                     ),
-                    Text(
-                      'B: ${_game!.timeTracking.getFormattedBenchTime(player.id)}',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 9,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -735,13 +721,6 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   ),
                   Text(
                     '${_game!.timeTracking.getFormattedTime(player.id)}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 9,
-                    ),
-                  ),
-                  Text(
-                    'B: ${_game!.timeTracking.getFormattedBenchTime(player.id)}',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 9,
