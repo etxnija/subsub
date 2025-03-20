@@ -58,9 +58,24 @@ class GameTimeTracking {
     Map<String, List<PlayerTimeRecord>>? playerRecords,
   }) : playerRecords = playerRecords ?? {};
 
-  int getMinutesPlayed(String playerId) {
+  int getSecondsPlayed(String playerId) {
     final records = playerRecords[playerId] ?? [];
-    return records.fold(0, (sum, record) => sum + record.durationMinutes);
+    return records.fold(0, (sum, record) => sum + record.durationSeconds);
+  }
+
+  int getSecondsOnBench(String playerId) {
+    final records = playerRecords[playerId] ?? [];
+    return records
+        .where((record) => record.positionId == null)
+        .fold(0, (sum, record) => sum + record.durationSeconds);
+  }
+
+  int getMinutesPlayed(String playerId) {
+    return getSecondsPlayed(playerId) ~/ 60;
+  }
+
+  int getMinutesOnBench(String playerId) {
+    return getSecondsOnBench(playerId) ~/ 60;
   }
 
   String getFormattedTime(String playerId) {
@@ -88,13 +103,6 @@ class GameTimeTracking {
     final records = playerRecords[playerId] ?? [];
     return records
         .where((record) => record.positionId == positionId)
-        .fold(0, (sum, record) => sum + record.durationMinutes);
-  }
-
-  int getMinutesOnBench(String playerId) {
-    final records = playerRecords[playerId] ?? [];
-    return records
-        .where((record) => record.positionId == null)
         .fold(0, (sum, record) => sum + record.durationMinutes);
   }
 
