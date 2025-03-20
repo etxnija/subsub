@@ -216,4 +216,31 @@ class Game {
   int getMinutesOnBench(String playerId) {
     return timeTracking.getMinutesOnBench(playerId);
   }
+
+  List<Player> getSortedSubstitutes() {
+    final substitutes = List<Player>.from(this.substitutes);
+    
+    substitutes.sort((a, b) {
+      // First compare by time on bench (longest first)
+      final benchTimeA = timeTracking.getSecondsOnBench(a.id);
+      final benchTimeB = timeTracking.getSecondsOnBench(b.id);
+      
+      if (benchTimeA != benchTimeB) {
+        return benchTimeB.compareTo(benchTimeA); // Longer bench time first
+      }
+      
+      // If bench times are equal, compare by total playing time (least first)
+      final playTimeA = timeTracking.getSecondsPlayed(a.id);
+      final playTimeB = timeTracking.getSecondsPlayed(b.id);
+      
+      if (playTimeA != playTimeB) {
+        return playTimeA.compareTo(playTimeB); // Less playing time first
+      }
+      
+      // If both times are equal, maintain current order
+      return 0;
+    });
+    
+    return substitutes;
+  }
 }

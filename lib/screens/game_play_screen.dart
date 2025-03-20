@@ -23,6 +23,7 @@ class GamePlayScreen extends ConsumerStatefulWidget {
 class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   Game? _game;
   Timer? _gameTimer;
+  Timer? _updateTimer;
   int _activeSeconds = 0;
   int _activePeriod = 0;
   bool _isPeriodActive = false;
@@ -35,7 +36,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       _loadGame();
     });
     // Update player times every second
-    Timer.periodic(const Duration(seconds: 1), (timer) {
+    _updateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted && _isPeriodActive) {
         setState(() {});
       }
@@ -54,6 +55,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
   @override
   void dispose() {
     _gameTimer?.cancel();
+    _updateTimer?.cancel();
     super.dispose();
   }
   
@@ -243,6 +245,11 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     });
   }
   
+  List<Player> getSortedSubstitutes() {
+    if (_game == null) return [];
+    return _game!.getSortedSubstitutes();
+  }
+  
   @override
   Widget build(BuildContext context) {
     if (_game == null) {
@@ -259,6 +266,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     final minutes = _activeSeconds ~/ 60;
     final seconds = _activeSeconds % 60;
     final formattedTime = '$minutes:${seconds.toString().padLeft(2, '0')}';
+    final sortedSubstitutes = getSortedSubstitutes();
 
     return Scaffold(
       appBar: AppBar(
@@ -412,9 +420,9 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                         Expanded(
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            itemCount: _game!.substitutes.length,
+                            itemCount: sortedSubstitutes.length,
                             itemBuilder: (context, index) {
-                              final player = _game!.substitutes[index];
+                              final player = sortedSubstitutes[index];
                               return _buildPlayerDraggable(player, null);
                             },
                           ),
@@ -521,7 +529,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            '${_game!.timeTracking.getFormattedBenchTime(player.id)}',
+                            '${_game!.timeTracking.getFormattedTime(player.id)}',
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 9,
@@ -591,13 +599,6 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  '${_game!.timeTracking.getFormattedBenchTime(player.id)}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 10,
-                  ),
-                ),
               ],
             ),
           ),
@@ -637,28 +638,29 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       '#${player.number}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 11,
                       ),
                     ),
                     Text(
                       player.name.split(' ').last,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 10,
+                        fontSize: 9,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      '${_game!.timeTracking.getFormattedBenchTime(player.id)}',
+                      '${_game!.timeTracking.getFormattedTime(player.id)}',
                       style: const TextStyle(
                         color: Colors.white70,
-                        fontSize: 10,
+                        fontSize: 9,
                       ),
                     ),
                   ],
@@ -684,13 +686,6 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                       fontSize: 10,
                     ),
                     overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    '${_game!.timeTracking.getFormattedBenchTime(player.id)}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 10,
-                    ),
                   ),
                 ],
               ),
