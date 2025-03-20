@@ -23,7 +23,16 @@ class GamesNotifier extends StateNotifier<List<Game>> {
   Future<void> loadGames() async {
     try {
       final gamesData = await _databaseService.getAll(tableName);
-      state = gamesData.map((data) => Game.fromMap(data)).toList();
+      final games =
+          gamesData.map((data) {
+            final game = Game.fromMap(data);
+            // Set up the time tracking manager's callback
+            game.timeTrackingManager.onGameUpdated = (updatedGame) {
+              updateGame(updatedGame);
+            };
+            return game;
+          }).toList();
+      state = games;
     } catch (e) {
       print('Error loading games: $e');
       state = [];
@@ -33,6 +42,10 @@ class GamesNotifier extends StateNotifier<List<Game>> {
   // Add a new game
   Future<void> addGame(Game game) async {
     try {
+      // Set up the time tracking manager's callback before adding
+      game.timeTrackingManager.onGameUpdated = (updatedGame) {
+        updateGame(updatedGame);
+      };
       await _databaseService.insertGame(game);
       await loadGames();
     } catch (e) {
@@ -43,8 +56,23 @@ class GamesNotifier extends StateNotifier<List<Game>> {
 
   // Update an existing game
   Future<void> updateGame(Game game) async {
-    await _databaseService.updateGame(game);
-    state = state.map((g) => g.id == game.id ? game : g).toList();
+    try {
+      await _databaseService.updateGame(game);
+      state =
+          state.map((g) {
+            if (g.id == game.id) {
+              // Ensure the callback is preserved when updating
+              game.timeTrackingManager.onGameUpdated = (updatedGame) {
+                updateGame(updatedGame);
+              };
+              return game;
+            }
+            return g;
+          }).toList();
+    } catch (e) {
+      debugPrint('Error updating game: $e');
+      rethrow;
+    }
   }
 
   // Delete a game

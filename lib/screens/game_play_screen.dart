@@ -231,7 +231,7 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     // Put the new player in the position
     newLineup[positionId] = player;
 
-    // Update the game
+    // Create the updated game first
     final updatedGame = _game!.copyWith(
       startingLineup: newLineup,
       substitutes: newSubstitutes,
@@ -250,12 +250,33 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
         ); // Start play time
 
         if (currentPlayer != null) {
-          // Current player becomes a substitute - end tracking
+          // Current player becomes a substitute - end play time, start bench time
+          updatedGame.timeTrackingManager.endCurrentTime(
+            currentPlayer.id,
+          ); // End play time
+          updatedGame.timeTrackingManager.startBenchTime(
+            currentPlayer.id,
+          ); // Start bench time
+        }
+      } else {
+        // This is a position swap between two players on the field
+        if (currentPlayer != null) {
+          // End current position time for both players
+          updatedGame.timeTrackingManager.endCurrentTime(player.id);
           updatedGame.timeTrackingManager.endCurrentTime(currentPlayer.id);
-          updatedGame.timeTrackingManager.startBenchTime(currentPlayer.id);
+
+          // Start new position time for both players
+          updatedGame.timeTrackingManager.startPlayTime(player.id, positionId);
+          updatedGame.timeTrackingManager.startPlayTime(
+            currentPlayer.id,
+            oldPositionId!,
+          );
+        } else {
+          // Player is moving to a new position, old position becomes empty
+          updatedGame.timeTrackingManager.endCurrentTime(player.id);
+          updatedGame.timeTrackingManager.startPlayTime(player.id, positionId);
         }
       }
-      // No need to update time tracking for position swaps since both players stay on field
     } else if (_game!.status == GameStatus.setup) {
       // If this is the first player being subbed in, start the period
       _startPeriod();

@@ -102,26 +102,36 @@ class GamesScreen extends ConsumerWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              TextButton.icon(
-                                onPressed: () {
-                                  // Navigation to edit lineup will be added later
-                                },
-                                icon: const Icon(Icons.edit),
-                                label: const Text('Edit'),
-                              ),
-                              const SizedBox(width: 8),
-                              FilledButton.icon(
-                                onPressed:
-                                    isGameReady
-                                        ? () {
-                                          context.push(
-                                            '/games/play/${game.id}',
-                                          );
-                                        }
-                                        : null,
-                                icon: const Icon(Icons.sports),
-                                label: const Text('Play'),
-                              ),
+                              if (game.status == GameStatus.completed)
+                                FilledButton.icon(
+                                  onPressed: () {
+                                    context.push('/games/stats/${game.id}');
+                                  },
+                                  icon: const Icon(Icons.bar_chart),
+                                  label: const Text('Stats'),
+                                )
+                              else ...[
+                                TextButton.icon(
+                                  onPressed: () {
+                                    // Navigation to edit lineup will be added later
+                                  },
+                                  icon: const Icon(Icons.edit),
+                                  label: const Text('Edit'),
+                                ),
+                                const SizedBox(width: 8),
+                                FilledButton.icon(
+                                  onPressed:
+                                      isGameReady
+                                          ? () {
+                                            context.push(
+                                              '/games/play/${game.id}',
+                                            );
+                                          }
+                                          : null,
+                                  icon: const Icon(Icons.sports),
+                                  label: const Text('Play'),
+                                ),
+                              ],
                             ],
                           ),
                         ],
