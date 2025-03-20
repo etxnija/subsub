@@ -1,15 +1,21 @@
 import 'dart:convert';
-import 'player.dart';
-import 'position.dart';
-import 'player_time.dart';
+import 'package:subsub/models/player.dart';
+import 'package:subsub/models/player_time.dart';
+import 'package:subsub/models/position.dart';
+import 'package:subsub/managers/time_tracking_manager.dart';
 
-enum GameStatus { setup, inProgress, paused, completed }
+enum GameStatus {
+  setup,
+  inProgress,
+  paused,
+  completed
+}
 
 class GamePeriod {
   final int number;
   final int durationMinutes;
-  DateTime? startTime;
-  DateTime? endTime;
+  final DateTime? startTime;
+  final DateTime? endTime;
 
   GamePeriod({
     required this.number,
@@ -83,6 +89,7 @@ class Game {
   final List<GamePeriod> periods;
   final GameStatus status;
   final GameTimeTracking timeTracking;
+  late final TimeTrackingManager timeTrackingManager;
 
   Game({
     required this.id,
@@ -93,7 +100,14 @@ class Game {
     required this.periods,
     this.status = GameStatus.setup,
     GameTimeTracking? timeTracking,
-  }) : timeTracking = timeTracking ?? GameTimeTracking();
+  }) : timeTracking = timeTracking ?? GameTimeTracking() {
+    timeTrackingManager = TimeTrackingManager(
+      game: this,
+      onGameUpdated: (game) {
+        // This will be set by the provider when the game is loaded
+      },
+    );
+  }
 
   Game copyWith({
     String? id,
@@ -105,7 +119,7 @@ class Game {
     GameStatus? status,
     GameTimeTracking? timeTracking,
   }) {
-    return Game(
+    final newGame = Game(
       id: id ?? this.id,
       date: date ?? this.date,
       opponent: opponent ?? this.opponent,
@@ -115,6 +129,9 @@ class Game {
       status: status ?? this.status,
       timeTracking: timeTracking ?? this.timeTracking,
     );
+    // Copy the timeTrackingManager's onGameUpdated callback
+    newGame.timeTrackingManager.onGameUpdated = timeTrackingManager.onGameUpdated;
+    return newGame;
   }
 
   Map<String, dynamic> toMap() {
@@ -190,19 +207,13 @@ class Game {
     );
   }
 
-  // Helper methods for time tracking
+  // Delegate time tracking methods to the manager
   void recordPlayerStart(String playerId, {String? positionId}) {
-    timeTracking.addRecord(
-      PlayerTimeRecord(
-        playerId: playerId,
-        positionId: positionId,
-        startTime: DateTime.now(),
-      ),
-    );
+    timeTrackingManager.startPlayTime(playerId, positionId ?? '');
   }
 
   void recordPlayerEnd(String playerId) {
-    timeTracking.endCurrentRecord(playerId);
+    timeTrackingManager.endCurrentTime(playerId);
   }
 
   int getMinutesPlayed(String playerId) {
