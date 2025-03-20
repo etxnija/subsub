@@ -75,9 +75,14 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
       status: GameStatus.inProgress,
     );
     
-    // Start tracking time for all players in the starting lineup
-    updatedGame.startingLineup.values.forEach((player) {
-      updatedGame.recordPlayerStart(player.id);
+    // Start play time for players in the starting lineup
+    updatedGame.startingLineup.forEach((positionId, player) {
+      updatedGame.timeTrackingManager.startPlayTime(player.id, positionId);
+    });
+    
+    // Start bench time for players in the substitutes list
+    updatedGame.substitutes.forEach((player) {
+      updatedGame.timeTrackingManager.startBenchTime(player.id);
     });
     
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
@@ -102,7 +107,12 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     
     // End tracking for all players on the field
     updatedGame.startingLineup.values.forEach((player) {
-      updatedGame.recordPlayerEnd(player.id);
+      updatedGame.timeTrackingManager.endCurrentTime(player.id);
+    });
+    
+    // End bench time tracking for all substitutes
+    updatedGame.substitutes.forEach((player) {
+      updatedGame.timeTrackingManager.endCurrentTime(player.id);
     });
     
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
@@ -134,7 +144,12 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     
     // End tracking for all players on the field
     updatedGame.startingLineup.values.forEach((player) {
-      updatedGame.recordPlayerEnd(player.id);
+      updatedGame.timeTrackingManager.endCurrentTime(player.id);
+    });
+    
+    // End bench time tracking for all substitutes
+    updatedGame.substitutes.forEach((player) {
+      updatedGame.timeTrackingManager.endCurrentTime(player.id);
     });
     
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
@@ -227,15 +242,20 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
     // Update time tracking if the period is active
     if (_isPeriodActive) {
       if (oldPositionId == null) {
-        // Player is coming from substitutes - start tracking
-        updatedGame.recordPlayerStart(player.id);
+        // Player is coming from substitutes - end bench time first, then start play time
+        updatedGame.timeTrackingManager.endCurrentTime(player.id); // End bench time
+        updatedGame.timeTrackingManager.startPlayTime(player.id, positionId); // Start play time
         
         if (currentPlayer != null) {
           // Current player becomes a substitute - end tracking
-          updatedGame.recordPlayerEnd(currentPlayer.id);
+          updatedGame.timeTrackingManager.endCurrentTime(currentPlayer.id);
+          updatedGame.timeTrackingManager.startBenchTime(currentPlayer.id);
         }
       }
       // No need to update time tracking for position swaps since both players stay on field
+    } else if (_game!.status == GameStatus.setup) {
+      // If this is the first player being subbed in, start the period
+      _startPeriod();
     }
     
     ref.read(gamesProvider.notifier).updateGame(updatedGame);
@@ -279,32 +299,44 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
               decoration: BoxDecoration(
                 color: Colors.green.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.green),
               ),
-              alignment: Alignment.center,
-              child: const Text(
-                'GAME COMPLETED',
-                style: TextStyle(color: Colors.green),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  SizedBox(width: 4),
+                  Text(
+                    'Game Complete',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             )
-          else if (_isPeriodActive)
-            IconButton(
-              onPressed: _pausePeriod,
-              icon: const Icon(Icons.pause),
-              tooltip: 'Pause Game',
-            )
-          else if (_game!.status == GameStatus.paused)
-            IconButton(
-              onPressed: _startPeriod,
-              icon: const Icon(Icons.play_arrow),
-              tooltip: 'Resume Game',
-            )
-          else if (_activePeriod < _game!.periods.length && 
-                  (_activePeriod == 0 || _game!.periods[_activePeriod - 1].isCompleted))
-            IconButton(
-              onPressed: _startPeriod,
-              icon: const Icon(Icons.play_arrow),
-              tooltip: 'Start Period',
-            ),
+          else ...[
+            if (_isPeriodActive)
+              IconButton(
+                onPressed: _pausePeriod,
+                icon: const Icon(Icons.pause),
+                tooltip: 'Pause Game',
+              )
+            else if (_game!.status == GameStatus.paused)
+              IconButton(
+                onPressed: _startPeriod,
+                icon: const Icon(Icons.play_arrow),
+                tooltip: 'Resume Game',
+              )
+            else if (_activePeriod < _game!.periods.length && 
+                    (_activePeriod == 0 || _game!.periods[_activePeriod - 1].isCompleted))
+              IconButton(
+                onPressed: _startPeriod,
+                icon: const Icon(Icons.play_arrow),
+                tooltip: 'Start Period',
+              ),
+          ],
         ],
       ),
       body: Column(
@@ -535,6 +567,13 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                               fontSize: 9,
                             ),
                           ),
+                          Text(
+                            'B: ${_game!.timeTracking.getFormattedBenchTime(player.id)}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 9,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -663,6 +702,13 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                         fontSize: 9,
                       ),
                     ),
+                    Text(
+                      'B: ${_game!.timeTracking.getFormattedBenchTime(player.id)}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 9,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -686,6 +732,20 @@ class _GamePlayScreenState extends ConsumerState<GamePlayScreen> {
                       fontSize: 10,
                     ),
                     overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '${_game!.timeTracking.getFormattedTime(player.id)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 9,
+                    ),
+                  ),
+                  Text(
+                    'B: ${_game!.timeTracking.getFormattedBenchTime(player.id)}',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 9,
+                    ),
                   ),
                 ],
               ),
