@@ -236,8 +236,8 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
       },
       builder: (context, candidateItems, rejectedItems) {
         return Container(
-          width: 50,
-          height: 50,
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
             color: player != null
                 ? _getColorForCategory(position.category)
@@ -260,7 +260,7 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
             color: Colors.transparent,
             child: InkWell(
               onTap: () => _showPlayerSelection(context, position),
-              borderRadius: BorderRadius.circular(25),
+              borderRadius: BorderRadius.circular(30),
               child: Stack(
                 children: [
                   Center(
@@ -278,24 +278,23 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
                           ),
                         ),
                         if (player != null) ...[
-                          const SizedBox(height: 2),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1,
+                          const SizedBox(height: 1),
+                          Text(
+                            '#${player.number}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(8),
+                          ),
+                          Text(
+                            player.name.split(' ').last,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
                             ),
-                            child: Text(
-                              '#${player.number}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ],
                       ],
