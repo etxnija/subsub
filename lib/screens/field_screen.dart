@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:subsub/models/game.dart';
 import 'package:subsub/models/player.dart';
@@ -84,8 +85,15 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
                 // Position markers
                 ...Position.standardPositions.map((position) {
                   return Positioned(
-                    left: MediaQuery.of(context).size.width * position.defaultLocation.dx - 25,
-                    top: MediaQuery.of(context).size.height * 0.5 * position.defaultLocation.dy - 25,
+                    left:
+                        MediaQuery.of(context).size.width *
+                            position.defaultLocation.dx -
+                        25,
+                    top:
+                        MediaQuery.of(context).size.height *
+                            0.5 *
+                            position.defaultLocation.dy -
+                        25,
                     child: _buildPositionMarker(context, position),
                   );
                 }).toList(),
@@ -98,51 +106,88 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.grey[200],
-              border: Border(
-                top: BorderSide(color: Colors.grey[300]!),
-              ),
+              border: Border(top: BorderSide(color: Colors.grey[300]!)),
             ),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _game?.substitutes.length ?? 0,
-              itemBuilder: (context, index) {
-                final player = _game!.substitutes[index];
-                return Draggable<Player>(
-                  data: player,
-                  feedback: Material(
-                    elevation: 4.0,
-                    shape: const CircleBorder(),
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.grey[700],
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
+              ),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: _game?.substitutes.length ?? 0,
+                itemBuilder: (context, index) {
+                  final player = _game!.substitutes[index];
+                  return LongPressDraggable<Player>(
+                    maxSimultaneousDrags: 1,
+                    hapticFeedbackOnStart: true,
+                    data: player,
+                    delay: const Duration(milliseconds: 150),
+                    feedback: Material(
+                      elevation: 4.0,
+                      shape: const CircleBorder(),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey[700],
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '#${player.number}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                player.name.split(' ').last,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: Center(
+                    ),
+                    childWhenDragging: Opacity(
+                      opacity: 0.3,
+                      child: Container(
+                        width: 60,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[400]!),
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
                               '#${player.number}',
                               style: const TextStyle(
-                                color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
                             Text(
                               player.name.split(' ').last,
-                              style: const TextStyle(color: Colors.white, fontSize: 10),
+                              style: const TextStyle(fontSize: 10),
                               overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                  childWhenDragging: Opacity(
-                    opacity: 0.3,
                     child: Container(
                       width: 60,
                       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -170,36 +215,9 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
                         ],
                       ),
                     ),
-                  ),
-                  child: Container(
-                    width: 60,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[400]!),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '#${player.number}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          player.name.split(' ').last,
-                          style: const TextStyle(fontSize: 10),
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -216,16 +234,16 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
         if (incomingPlayer != null) {
           final updatedLineup = Map<String, Player>.from(_game!.startingLineup);
           final updatedSubs = List<Player>.from(_game!.substitutes);
-          
+
           // If there's already a player in this position, move them back to substitutes
           if (player != null) {
             updatedSubs.add(player);
           }
-          
+
           // Remove the dragged player from substitutes and add them to the position
           updatedSubs.remove(incomingPlayer);
           updatedLineup[position.id] = incomingPlayer;
-          
+
           setState(() {
             _game = _game!.copyWith(
               startingLineup: updatedLineup,
@@ -239,9 +257,10 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
           width: 60,
           height: 60,
           decoration: BoxDecoration(
-            color: player != null
-                ? _getColorForCategory(position.category)
-                : _getColorForCategory(position.category).withOpacity(0.5),
+            color:
+                player != null
+                    ? _getColorForCategory(position.category)
+                    : _getColorForCategory(position.category).withOpacity(0.5),
             shape: BoxShape.circle,
             border: Border.all(
               color: Colors.white,
@@ -320,119 +339,121 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
 
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getColorForCategory(position.category),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      position.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
                   ),
-                  const Spacer(),
-                  if (currentPlayer != null)
-                    TextButton.icon(
-                      onPressed: () {
-                        final updatedLineup = Map<String, Player>.from(
-                          _game!.startingLineup,
-                        )..remove(position.id);
-                        final updatedSubs = List<Player>.from(
-                          _game!.substitutes,
-                        )..add(currentPlayer);
-
-                        // Update the state with the new lineup
-                        setState(() {
-                          _game = _game!.copyWith(
-                            startingLineup: updatedLineup,
-                            substitutes: updatedSubs,
-                          );
-                        });
-
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.person_remove),
-                      label: const Text('Remove Player'),
-                    ),
-                ],
-              ),
-            ),
-            const Divider(),
-            Expanded(
-              child: ListView.builder(
-                itemCount: availablePlayers.length,
-                itemBuilder: (context, index) {
-                  final player = availablePlayers[index];
-                  final isCurrentlySelected = currentPlayer?.id == player.id;
-                  final isAssignedElsewhere =
-                      !isCurrentlySelected &&
-                      _game!.startingLineup.values.any(
-                        (p) => p.id == player.id,
-                      );
-
-                  return ListTile(
-                    enabled: !isAssignedElsewhere,
-                    selected: isCurrentlySelected,
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey[300],
-                      child: Text(
-                        '#${player.number}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getColorForCategory(position.category),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          position.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    title: Text(player.name),
-                    onTap: () {
-                      if (isCurrentlySelected) return;
+                      const Spacer(),
+                      if (currentPlayer != null)
+                        TextButton.icon(
+                          onPressed: () {
+                            final updatedLineup = Map<String, Player>.from(
+                              _game!.startingLineup,
+                            )..remove(position.id);
+                            final updatedSubs = List<Player>.from(
+                              _game!.substitutes,
+                            )..add(currentPlayer);
 
-                      final updatedLineup = Map<String, Player>.from(
-                        _game!.startingLineup,
-                      )..[position.id] = player;
-                      final updatedSubs = List<Player>.from(
-                        _game!.substitutes,
-                      )..remove(player);
-                      if (currentPlayer != null) {
-                        updatedSubs.add(currentPlayer);
-                      }
+                            // Update the state with the new lineup
+                            setState(() {
+                              _game = _game!.copyWith(
+                                startingLineup: updatedLineup,
+                                substitutes: updatedSubs,
+                              );
+                            });
 
-                      // Update the state with the new lineup
-                      setState(() {
-                        _game = _game!.copyWith(
-                          startingLineup: updatedLineup,
-                          substitutes: updatedSubs,
-                        );
-                      });
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.person_remove),
+                          label: const Text('Remove Player'),
+                        ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: availablePlayers.length,
+                    itemBuilder: (context, index) {
+                      final player = availablePlayers[index];
+                      final isCurrentlySelected =
+                          currentPlayer?.id == player.id;
+                      final isAssignedElsewhere =
+                          !isCurrentlySelected &&
+                          _game!.startingLineup.values.any(
+                            (p) => p.id == player.id,
+                          );
 
-                      Navigator.pop(context);
+                      return ListTile(
+                        enabled: !isAssignedElsewhere,
+                        selected: isCurrentlySelected,
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.grey[300],
+                          child: Text(
+                            '#${player.number}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        title: Text(player.name),
+                        onTap: () {
+                          if (isCurrentlySelected) return;
+
+                          final updatedLineup = Map<String, Player>.from(
+                            _game!.startingLineup,
+                          )..[position.id] = player;
+                          final updatedSubs = List<Player>.from(
+                            _game!.substitutes,
+                          )..remove(player);
+                          if (currentPlayer != null) {
+                            updatedSubs.add(currentPlayer);
+                          }
+
+                          // Update the state with the new lineup
+                          setState(() {
+                            _game = _game!.copyWith(
+                              startingLineup: updatedLineup,
+                              substitutes: updatedSubs,
+                            );
+                          });
+
+                          Navigator.pop(context);
+                        },
+                      );
                     },
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
