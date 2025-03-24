@@ -12,6 +12,8 @@ class GamesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final games = ref.watch(gamesProvider);
+    // Sort games by date in descending order (newest first)
+    final sortedGames = [...games]..sort((a, b) => b.date.compareTo(a.date));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Games')),
@@ -25,14 +27,14 @@ class GamesScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
       body:
-          games.isEmpty
+          sortedGames.isEmpty
               ? const Center(
                 child: Text('No games yet. Add a game to get started.'),
               )
               : ListView.builder(
-                itemCount: games.length,
+                itemCount: sortedGames.length,
                 itemBuilder: (context, index) {
-                  final game = games[index];
+                  final game = sortedGames[index];
                   final playerCount =
                       game.startingLineup.length + game.substitutes.length;
                   final isGameReady = game.startingLineup.length >= 7;
@@ -137,43 +139,62 @@ class GamesScreen extends ConsumerWidget {
                                 onPressed: () async {
                                   final shouldDelete = await showDialog<bool>(
                                     context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text('Delete Game'),
-                                      content: Text(
-                                        'Are you sure you want to delete the game against ${game.opponent}? This action cannot be undone.',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context, false),
-                                          child: const Text('Cancel'),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () => Navigator.pop(context, true),
-                                          style: FilledButton.styleFrom(
-                                            backgroundColor: Colors.red,
+                                    builder:
+                                        (context) => AlertDialog(
+                                          title: const Text('Delete Game'),
+                                          content: Text(
+                                            'Are you sure you want to delete the game against ${game.opponent}? This action cannot be undone.',
                                           ),
-                                          child: const Text('Delete'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.pop(
+                                                    context,
+                                                    false,
+                                                  ),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            FilledButton(
+                                              onPressed:
+                                                  () => Navigator.pop(
+                                                    context,
+                                                    true,
+                                                  ),
+                                              style: FilledButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                              ),
+                                              child: const Text('Delete'),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
                                   );
 
                                   if (shouldDelete == true && context.mounted) {
                                     try {
-                                      await ref.read(gamesProvider.notifier).deleteGame(game);
+                                      await ref
+                                          .read(gamesProvider.notifier)
+                                          .deleteGame(game);
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           const SnackBar(
-                                            content: Text('Game deleted successfully'),
+                                            content: Text(
+                                              'Game deleted successfully',
+                                            ),
                                             backgroundColor: Colors.green,
                                           ),
                                         );
                                       }
                                     } catch (e) {
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
                                           SnackBar(
-                                            content: Text('Error deleting game: $e'),
+                                            content: Text(
+                                              'Error deleting game: $e',
+                                            ),
                                             backgroundColor: Colors.red,
                                           ),
                                         );
