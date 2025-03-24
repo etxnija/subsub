@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 import '../models/player.dart';
 import '../models/game.dart';
@@ -56,8 +57,10 @@ class DatabaseService {
           onCreate: _createDatabase,
         );
 
-        // Seed initial data
-        await seedTopPlayers(_database);
+        // Only seed initial data in debug mode
+        if (kDebugMode) {
+          await seedTopPlayers(_database);
+        }
 
         // Update version in preferences
         await prefs.setInt(kDbVersionKey, kCurrentDbVersion);
@@ -85,8 +88,10 @@ class DatabaseService {
           onCreate: _createDatabase,
         );
 
-        // Seed initial data
-        await seedTopPlayers(_database);
+        // Only seed initial data in debug mode
+        if (kDebugMode) {
+          await seedTopPlayers(_database);
+        }
 
         // Reset the version in preferences
         final prefs = await SharedPreferences.getInstance();
@@ -210,8 +215,10 @@ class DatabaseService {
       )
     ''');
 
-    // Seed the database with initial players
-    await seedTopPlayers(db);
+    // Only seed initial players in debug mode
+    if (kDebugMode) {
+      await seedTopPlayers(db);
+    }
   }
 
   Future<void> seedTopPlayers([Database? providedDb]) async {
