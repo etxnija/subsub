@@ -4,6 +4,7 @@ import 'package:subsub/models/game.dart';
 import 'package:subsub/models/player.dart';
 import 'package:subsub/models/position.dart';
 import 'package:subsub/providers/game_provider.dart';
+import 'package:subsub/widgets/soccer_field_painter.dart';
 
 class FieldScreen extends ConsumerStatefulWidget {
   final Game? game;
@@ -63,116 +64,249 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
             ),
         ],
       ),
-      body: _buildField(context),
-    );
-  }
-
-  Widget _buildField(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const markerSize = 40.0;
-        return Container(
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green[800],
-            border: Border.all(color: Colors.white, width: 2),
+      body: Column(
+        children: [
+          // Field with position markers
+          Expanded(
+            child: Stack(
+              children: [
+                // Soccer field background
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green[800],
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: CustomPaint(
+                    painter: SoccerFieldPainter(),
+                    size: Size.infinite,
+                  ),
+                ),
+                // Position markers
+                ...Position.standardPositions.map((position) {
+                  return Positioned(
+                    left: MediaQuery.of(context).size.width * position.defaultLocation.dx - 25,
+                    top: MediaQuery.of(context).size.height * 0.5 * position.defaultLocation.dy - 25,
+                    child: _buildPositionMarker(context, position),
+                  );
+                }).toList(),
+              ],
+            ),
           ),
-          child: Stack(
-            children: [
-              CustomPaint(
-                painter: HalfFieldPainter(),
-                size: Size(constraints.maxWidth, constraints.maxHeight),
+          // Bench area for substitutes
+          Container(
+            height: 100,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              border: Border(
+                top: BorderSide(color: Colors.grey[300]!),
               ),
-              ...Position.standardPositions.map((position) {
-                return Positioned(
-                  left:
-                      (position.defaultLocation.dx * constraints.maxWidth) -
-                      (markerSize / 2),
-                  top:
-                      (position.defaultLocation.dy * constraints.maxHeight) -
-                      (markerSize / 2),
-                  child: _buildPositionMarker(context, position),
+            ),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _game?.substitutes.length ?? 0,
+              itemBuilder: (context, index) {
+                final player = _game!.substitutes[index];
+                return Draggable<Player>(
+                  data: player,
+                  feedback: Material(
+                    elevation: 4.0,
+                    shape: const CircleBorder(),
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.grey[700],
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '#${player.number}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              player.name.split(' ').last,
+                              style: const TextStyle(color: Colors.white, fontSize: 10),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  childWhenDragging: Opacity(
+                    opacity: 0.3,
+                    child: Container(
+                      width: 60,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey[400]!),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '#${player.number}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            player.name.split(' ').last,
+                            style: const TextStyle(fontSize: 10),
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  child: Container(
+                    width: 60,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[400]!),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '#${player.number}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        Text(
+                          player.name.split(' ').last,
+                          style: const TextStyle(fontSize: 10),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 );
-              }).toList(),
-            ],
+              },
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 
   Widget _buildPositionMarker(BuildContext context, Position position) {
-    const markerSize = 40.0;
     final player = _game?.startingLineup[position.id];
 
-    return Container(
-      width: markerSize,
-      height: markerSize,
-      decoration: BoxDecoration(
-        color:
-            player != null
+    return DragTarget<Player>(
+      onWillAccept: (incomingPlayer) => true,
+      onAccept: (incomingPlayer) {
+        if (incomingPlayer != null) {
+          final updatedLineup = Map<String, Player>.from(_game!.startingLineup);
+          final updatedSubs = List<Player>.from(_game!.substitutes);
+          
+          // If there's already a player in this position, move them back to substitutes
+          if (player != null) {
+            updatedSubs.add(player);
+          }
+          
+          // Remove the dragged player from substitutes and add them to the position
+          updatedSubs.remove(incomingPlayer);
+          updatedLineup[position.id] = incomingPlayer;
+          
+          setState(() {
+            _game = _game!.copyWith(
+              startingLineup: updatedLineup,
+              substitutes: updatedSubs,
+            );
+          });
+        }
+      },
+      builder: (context, candidateItems, rejectedItems) {
+        return Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: player != null
                 ? _getColorForCategory(position.category)
                 : _getColorForCategory(position.category).withOpacity(0.5),
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _showPlayerSelection(context, position),
-          borderRadius: BorderRadius.circular(markerSize / 2),
-          child: Stack(
-            children: [
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      position.abbreviation,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(
-                          player != null ? 0.7 : 1,
-                        ),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (player != null) ...[
-                      const SizedBox(height: 2),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '#${player.number}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white,
+              width: candidateItems.isNotEmpty ? 3 : 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-        ),
-      ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _showPlayerSelection(context, position),
+              borderRadius: BorderRadius.circular(25),
+              child: Stack(
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          position.abbreviation,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(
+                              player != null ? 0.7 : 1,
+                            ),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        if (player != null) ...[
+                          const SizedBox(height: 2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '#${player.number}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -187,121 +321,119 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
 
     showModalBottomSheet(
       context: context,
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getColorForCategory(position.category),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      position.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getColorForCategory(position.category),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          position.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  const Spacer(),
+                  if (currentPlayer != null)
+                    TextButton.icon(
+                      onPressed: () {
+                        final updatedLineup = Map<String, Player>.from(
+                          _game!.startingLineup,
+                        )..remove(position.id);
+                        final updatedSubs = List<Player>.from(
+                          _game!.substitutes,
+                        )..add(currentPlayer);
+
+                        // Update the state with the new lineup
+                        setState(() {
+                          _game = _game!.copyWith(
+                            startingLineup: updatedLineup,
+                            substitutes: updatedSubs,
+                          );
+                        });
+
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.person_remove),
+                      label: const Text('Remove Player'),
+                    ),
+                ],
+              ),
+            ),
+            const Divider(),
+            Expanded(
+              child: ListView.builder(
+                itemCount: availablePlayers.length,
+                itemBuilder: (context, index) {
+                  final player = availablePlayers[index];
+                  final isCurrentlySelected = currentPlayer?.id == player.id;
+                  final isAssignedElsewhere =
+                      !isCurrentlySelected &&
+                      _game!.startingLineup.values.any(
+                        (p) => p.id == player.id,
+                      );
+
+                  return ListTile(
+                    enabled: !isAssignedElsewhere,
+                    selected: isCurrentlySelected,
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.grey[300],
+                      child: Text(
+                        '#${player.number}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
                       ),
-                      const Spacer(),
-                      if (currentPlayer != null)
-                        TextButton.icon(
-                          onPressed: () {
-                            final updatedLineup = Map<String, Player>.from(
-                              _game!.startingLineup,
-                            )..remove(position.id);
-                            final updatedSubs = List<Player>.from(
-                              _game!.substitutes,
-                            )..add(currentPlayer);
+                    ),
+                    title: Text(player.name),
+                    onTap: () {
+                      if (isCurrentlySelected) return;
 
-                            // Update the state with the new lineup
-                            setState(() {
-                              _game = _game!.copyWith(
-                                startingLineup: updatedLineup,
-                                substitutes: updatedSubs,
-                              );
-                            });
+                      final updatedLineup = Map<String, Player>.from(
+                        _game!.startingLineup,
+                      )..[position.id] = player;
+                      final updatedSubs = List<Player>.from(
+                        _game!.substitutes,
+                      )..remove(player);
+                      if (currentPlayer != null) {
+                        updatedSubs.add(currentPlayer);
+                      }
 
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.person_remove),
-                          label: const Text('Remove Player'),
-                        ),
-                    ],
-                  ),
-                ),
-                const Divider(),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: availablePlayers.length,
-                    itemBuilder: (context, index) {
-                      final player = availablePlayers[index];
-                      final isCurrentlySelected =
-                          currentPlayer?.id == player.id;
-                      final isAssignedElsewhere =
-                          !isCurrentlySelected &&
-                          _game!.startingLineup.values.any(
-                            (p) => p.id == player.id,
-                          );
+                      // Update the state with the new lineup
+                      setState(() {
+                        _game = _game!.copyWith(
+                          startingLineup: updatedLineup,
+                          substitutes: updatedSubs,
+                        );
+                      });
 
-                      return ListTile(
-                        enabled: !isAssignedElsewhere,
-                        selected: isCurrentlySelected,
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.grey[300],
-                          child: Text(
-                            '#${player.number}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        title: Text(player.name),
-                        onTap: () {
-                          if (isCurrentlySelected) return;
-
-                          final updatedLineup = Map<String, Player>.from(
-                            _game!.startingLineup,
-                          )..[position.id] = player;
-                          final updatedSubs = List<Player>.from(
-                            _game!.substitutes,
-                          )..remove(player);
-                          if (currentPlayer != null) {
-                            updatedSubs.add(currentPlayer);
-                          }
-
-                          // Update the state with the new lineup
-                          setState(() {
-                            _game = _game!.copyWith(
-                              startingLineup: updatedLineup,
-                              substitutes: updatedSubs,
-                            );
-                          });
-
-                          Navigator.pop(context);
-                        },
-                      );
+                      Navigator.pop(context);
                     },
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
             ),
-          ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -316,60 +448,7 @@ class _FieldScreenState extends ConsumerState<FieldScreen> {
       case 'Forward':
         return Colors.red[700]!;
       default:
-        return Colors.grey;
+        return Colors.grey[700]!;
     }
   }
-}
-
-class HalfFieldPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint =
-        Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2;
-
-    // Center circle (half)
-    final centerY = size.height;
-    final radius = size.width / 8;
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(size.width / 2, centerY), radius: radius),
-      3.14159, // PI
-      3.14159, // PI
-      false,
-      paint,
-    );
-
-    // Penalty area
-    final penaltyAreaWidth = size.width * 0.7;
-    final penaltyAreaHeight = size.height * 0.25;
-
-    canvas.drawRect(
-      Rect.fromLTWH(
-        (size.width - penaltyAreaWidth) / 2,
-        0,
-        penaltyAreaWidth,
-        penaltyAreaHeight,
-      ),
-      paint,
-    );
-
-    // Goal area
-    final goalAreaWidth = size.width * 0.35;
-    final goalAreaHeight = size.height * 0.12;
-
-    canvas.drawRect(
-      Rect.fromLTWH(
-        (size.width - goalAreaWidth) / 2,
-        0,
-        goalAreaWidth,
-        goalAreaHeight,
-      ),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
