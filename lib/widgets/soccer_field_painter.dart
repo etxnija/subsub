@@ -39,8 +39,8 @@ class SoccerFieldPainter extends CustomPainter {
 
     // Draw center line
     canvas.drawLine(
-      Offset(size.width / 2, 0),
-      Offset(size.width / 2, size.height),
+      Offset(0, size.height / 2),
+      Offset(size.width, size.height / 2),
       paint,
     );
 
